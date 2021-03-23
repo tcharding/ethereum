@@ -22,7 +22,7 @@ use hex::FromHexError;
 pub use primitive_types::U256;
 use serde::{Deserialize, Deserializer, Serialize};
 
-pub use crate::asset::{Erc20, Erc20Quantity, Ether};
+pub use crate::asset::{Amount, Erc20, Ether};
 
 pub mod asset;
 pub mod geth;

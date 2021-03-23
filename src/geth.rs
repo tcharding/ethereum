@@ -5,13 +5,10 @@ use std::str::FromStr;
 use anyhow::{Context, Result};
 use clarity::Uint256;
 use ethereum_types::U256;
-use num::{BigUint, Num};
 use url::Url;
 
-use crate::asset::TryFromWei;
 use crate::{
-    jsonrpc, Address, ChainId, Erc20, Erc20Quantity, Ether, Hash, TransactionReceipt,
-    UnformattedData,
+    jsonrpc, Address, Amount, ChainId, Erc20, Ether, Hash, TransactionReceipt, UnformattedData,
 };
 
 #[derive(Debug, Clone)]
@@ -112,7 +109,7 @@ impl Client {
             data: UnformattedData(balance_of_fn(account)?),
         };
 
-        let quantity: String = self
+        let amount: String = self
             .inner
             .send(jsonrpc::Request::v2("eth_call", vec![
                 jsonrpc::serialize(call_request)?,
@@ -120,12 +117,11 @@ impl Client {
             ]))
             .await
             .context("failed to get erc20 token balance")?;
-        let quantity = BigUint::from_str_radix(&quantity[2..], 16)?;
-        let quantity = Erc20Quantity::try_from_wei(quantity)?;
+        let amount = Amount::try_from_hex_str(&amount)?;
 
         Ok(Erc20 {
             token_contract,
-            quantity,
+            amount,
         })
     }
 

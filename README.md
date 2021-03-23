@@ -15,3 +15,6 @@ Add in the prop test and quickcheck stuff from the original code.
 - https://docs.rs/proptest/1.0.0/proptest/
 - https://altsysrq.github.io/proptest-book/intro.html
 - https://github.com/BurntSushi/quickcheck
+
+Write/import integration tests that run against a geth instance to test the RPC
+client.
