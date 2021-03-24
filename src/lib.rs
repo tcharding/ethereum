@@ -13,7 +13,9 @@
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
 #![forbid(unsafe_code)]
 
+use std::convert::TryFrom;
 use std::fmt::{self, Display, Formatter};
+use std::num::ParseIntError;
 use std::str::FromStr;
 
 use anyhow::Result;
@@ -26,7 +28,6 @@ pub use crate::asset::{Amount, Erc20, Ether};
 
 pub mod asset;
 pub mod geth;
-pub mod jsonrpc;
 
 /// Ethereum address size is 20 bytes (the last 20 bytes of the Keccak hashed
 /// pubkey).
@@ -244,6 +245,15 @@ impl From<ChainId> for u32 {
 impl From<u32> for ChainId {
     fn from(id: u32) -> Self {
         ChainId(id)
+    }
+}
+
+impl TryFrom<String> for ChainId {
+    type Error = ParseIntError;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        let chain_id: u32 = s.parse()?;
+        Ok(ChainId::from(chain_id))
     }
 }
 

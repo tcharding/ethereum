@@ -1,179 +1,103 @@
 //! JSON RPC client for go-ethereum.
 //! ref: https://eth.wiki/json-rpc/API
-use std::str::FromStr;
+use std::convert::TryFrom;
+use std::fmt::{self, Debug, Formatter};
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clarity::Uint256;
 use ethereum_types::U256;
-use url::Url;
+use jsonrpc_client::{implement, Url};
 
-use crate::{
-    jsonrpc, Address, Amount, ChainId, Erc20, Ether, Hash, TransactionReceipt, UnformattedData,
-};
+use crate::{Address, Amount, ChainId, Ether, Hash, TransactionReceipt};
 
-#[derive(Debug, Clone)]
+#[jsonrpc_client::api(version = "1.0")]
+trait GethRpc {
+    #[allow(non_snake_case)]
+    async fn web3_clientVersion(&self) -> String;
+    #[allow(non_snake_case)]
+    async fn net_version(&self) -> String;
+    #[allow(non_snake_case)]
+    async fn eth_sendRawTransaction(&self, txn_hex: String) -> Hash;
+    #[allow(non_snake_case)]
+    async fn eth_getTransactionReceipt(&self) -> TransactionReceipt;
+    #[allow(non_snake_case)]
+    async fn eth_getTransactionCount(&self, account: Address) -> u32;
+    #[allow(non_snake_case)]
+    async fn eth_getBalance(&self, account: Address) -> Ether;
+    #[allow(non_snake_case)]
+    async fn eth_gasPrice(&self) -> Ether;
+    #[allow(non_snake_case)]
+    async fn eth_estimateGas(&self) -> Uint256;
+}
+
+#[implement(GethRpc)]
 pub struct Client {
-    inner: jsonrpc::Client,
+    inner: reqwest::Client,
+    base_url: Url,
 }
 
 impl Client {
-    pub fn new(url: Url) -> Self {
-        Client {
-            inner: jsonrpc::Client::new(url),
-        }
+    pub fn new(base_url: &str) -> Result<Self> {
+        Ok(Self {
+            inner: reqwest::Client::new(),
+            base_url: base_url.parse()?,
+        })
     }
 
-    pub fn localhost() -> Self {
-        Client::new(Url::from_str("http://localhost:8545/").expect("failed to parse default URL"))
+    pub fn localhost() -> Result<Self> {
+        Client::new("http://localhost:8545/")
     }
 
-    /// Execute RPC method: `web3_clientVersion`. Return version string:
-    /// "Geth/v1.10.2-unstable-f304290b-20210323/linux-amd64/go1.13.8"
     pub async fn client_version(&self) -> Result<String> {
-        let version = self
-            .inner
-            .send::<Vec<()>, String>(jsonrpc::Request::v2("web3_clientVersion", vec![]))
-            .await
-            .context("failed to fetch client version")?;
-
+        let version = self.web3_clientVersion().await?;
         Ok(version)
     }
 
-    /// Execute RPC method: `net_version`. Return network id (chain id).
     pub async fn chain_id(&self) -> Result<ChainId> {
-        let chain_id = self
-            .inner
-            .send::<Vec<()>, String>(jsonrpc::Request::v2("net_version", vec![]))
-            .await
-            .context("failed to fetch net version")?;
-        let chain_id: u32 = chain_id.parse()?;
-        let chain_id = ChainId::from(chain_id);
+        let version = self.net_version().await?;
+        let chain_id = ChainId::try_from(version)?;
 
         Ok(chain_id)
     }
 
-    /// Execute RPC method: `eth_sendRawTransaction`. Return transaction hash.
-    pub async fn send_raw_transaction(&self, transaction_hex: String) -> Result<Hash> {
-        let tx_hash = self
-            .inner
-            .send(jsonrpc::Request::v2("eth_sendRawTransaction", vec![
-                transaction_hex,
-            ]))
-            .await
-            .context("failed to send raw transaction")?;
-
-        Ok(tx_hash)
+    pub async fn send_raw_transaciton(&self, transaction_hex: String) -> Result<Hash> {
+        let hash = self.eth_sendRawTransaction(transaction_hex).await?;
+        Ok(hash)
     }
 
-    /// Execute RPC method: `eth_getTransactionReceipt`.
-    pub async fn get_transaction_receipt(
-        &self,
-        transaction_hash: Hash,
-    ) -> Result<Option<TransactionReceipt>> {
-        let receipt = self
-            .inner
-            .send(jsonrpc::Request::v2("eth_getTransactionReceipt", vec![
-                jsonrpc::serialize(transaction_hash)?,
-            ]))
-            .await
-            .context("failed to get transaction receipt")?;
-
+    pub async fn get_transaciton_receipt(&self) -> Result<TransactionReceipt> {
+        let receipt = self.eth_getTransactionReceipt().await?;
         Ok(receipt)
     }
 
-    /// Execute RPC method: `eth_getTransactionCount`. Return the number of
-    /// transactions sent from this address.
     pub async fn get_transaction_count(&self, account: Address) -> Result<u32> {
-        let count: String = self
-            .inner
-            .send(jsonrpc::Request::v2("eth_getTransactionCount", vec![
-                jsonrpc::serialize(account)?,
-                jsonrpc::serialize("latest")?,
-            ]))
-            .await
-            .context("failed to get transaction count")?;
-
-        let count = u32::from_str_radix(&count[2..], 16)?;
+        let count = self.eth_getTransactionCount(account).await?;
         Ok(count)
     }
 
-    pub async fn erc20_balance(&self, account: Address, token_contract: Address) -> Result<Erc20> {
-        #[derive(Debug, serde::Serialize)]
-        struct CallRequest {
-            to: Address,
-            data: UnformattedData,
-        }
-
-        let call_request = CallRequest {
-            to: token_contract,
-            data: UnformattedData(balance_of_fn(account)?),
-        };
-
-        let amount: String = self
-            .inner
-            .send(jsonrpc::Request::v2("eth_call", vec![
-                jsonrpc::serialize(call_request)?,
-                jsonrpc::serialize("latest")?,
-            ]))
-            .await
-            .context("failed to get erc20 token balance")?;
-        let amount = Amount::try_from_hex_str(&amount)?;
-
-        Ok(Erc20 {
-            token_contract,
-            amount,
-        })
-    }
-
-    pub async fn get_balance(&self, address: Address) -> Result<Ether> {
-        let amount: String = self
-            .inner
-            .send(jsonrpc::Request::v2("eth_getBalance", vec![
-                jsonrpc::serialize(address)?,
-                jsonrpc::serialize("latest")?,
-            ]))
-            .await
-            .context("failed to get balance")?;
-        let amount = Ether::try_from_hex_str(&amount)?;
-
-        Ok(amount)
+    pub async fn get_balance(&self, account: Address) -> Result<Amount> {
+        let balance = self.eth_getBalance(account).await?;
+        Ok(balance)
     }
 
     pub async fn gas_price(&self) -> Result<Ether> {
-        let amount = self
-            .inner
-            .send::<Vec<()>, String>(jsonrpc::Request::v2("eth_gasPrice", vec![]))
-            .await
-            .context("failed to get gas price")?;
-        let amount = Ether::try_from_hex_str(&amount[2..])?;
-
-        Ok(amount)
+        let gas = self.eth_gasPrice().await?;
+        Ok(gas)
     }
 
-    pub async fn gas_limit(&self, request: EstimateGasRequest) -> Result<clarity::Uint256> {
-        let gas_limit: String = self
-            .inner
-            .send(jsonrpc::Request::v2("eth_estimateGas", vec![
-                jsonrpc::serialize(request)?,
-            ]))
-            .await
-            .context("failed to get gas price")?;
-        let gas_limit = clarity::Uint256::from_str_radix(&gas_limit[2..], 16)?;
-
-        Ok(gas_limit)
+    pub async fn estimate_gas(&self) -> Result<Uint256> {
+        let gas = self.eth_estimateGas().await?;
+        Ok(gas)
     }
 }
 
-fn balance_of_fn(account: Address) -> Result<Vec<u8>> {
-    let account = clarity::Address::from_slice(account.as_bytes())
-        .map_err(|_| anyhow::anyhow!("Could not construct clarity::Address from slice"))?;
-
-    let balance_of =
-        clarity::abi::encode_call("balanceOf(address)", &[clarity::abi::Token::Address(
-            account,
-        )])?;
-
-    Ok(balance_of)
+impl Debug for Client {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Client")
+            .field("inner", &self.inner)
+            .field("base_url", &self.base_url)
+            .finish()
+    }
 }
 
 #[derive(Debug, serde::Serialize)]
