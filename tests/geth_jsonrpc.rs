@@ -1,16 +1,22 @@
 //! Test the geth RPC client. To run these tests access to a geth node is
 //! required.
+use std::str::FromStr;
+
 use anyhow::Result;
 
-use ethereum::geth::jsonrpc_client::Client;
+use ethereum::geth::jsonrpc::{Client, Url};
 
 // URL of the geth node to test against.
 const GETH_URL: &str = "http://localhost:8545/";
-// `geth -networkid <CHAIN_ID>`
+
+fn client() -> Client {
+    let url = Url::from_str(GETH_URL).expect("failed to parse url");
+    Client::new(url)
+}
 
 #[tokio::test]
 async fn can_connect_to_geth_node() -> Result<()> {
-    let cli = Client::new(GETH_URL)?;
+    let cli = client();
     let _ = cli.client_version().await?;
     Ok(())
 }

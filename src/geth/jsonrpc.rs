@@ -5,7 +5,7 @@ use std::str::FromStr;
 use anyhow::{Context, Result};
 use clarity::Uint256;
 use ethereum_types::U256;
-use url::Url;
+pub use url::Url;
 
 use crate::{
     jsonrpc, Address, Amount, ChainId, Erc20, Ether, Hash, TransactionReceipt, UnformattedData,
@@ -23,8 +23,11 @@ impl Client {
         }
     }
 
-    pub fn localhost() -> Self {
-        Client::new(Url::from_str("http://localhost:8545/").expect("failed to parse default URL"))
+    pub fn localhost() -> Result<Self> {
+        let url = Url::from_str("http://localhost:8545/")?;
+        let client = Client::new(url);
+
+        Ok(client)
     }
 
     /// Execute RPC method: `web3_clientVersion`. Return version string:
