@@ -1,7 +1,8 @@
 //! JSON RPC client for go-ethereum.
 //! ref: https://eth.wiki/json-rpc/API
 use std::convert::TryFrom;
-use std::fmt::{self, Debug, Formatter};
+use std::fmt::{self, Debug, Display, Formatter};
+use std::str::FromStr;
 
 use anyhow::Result;
 use clarity::Uint256;
@@ -23,11 +24,11 @@ trait GethRpc {
     #[allow(non_snake_case)]
     async fn eth_getTransactionCount(&self, account: Address) -> u32;
     #[allow(non_snake_case)]
-    async fn eth_getBalance(&self, account: Address) -> Ether;
+    async fn eth_getBalance(&self, account: Address, height: String) -> String;
     #[allow(non_snake_case)]
-    async fn eth_gasPrice(&self) -> Ether;
+    async fn eth_gasPrice(&self) -> String;
     #[allow(non_snake_case)]
-    async fn eth_estimateGas(&self) -> Uint256;
+    async fn eth_estimateGas(&self) -> String;
 }
 
 #[implement(GethRpc)]
@@ -75,18 +76,21 @@ impl Client {
         Ok(count)
     }
 
-    pub async fn get_balance(&self, account: Address) -> Result<Amount> {
-        let balance = self.eth_getBalance(account).await?;
+    pub async fn get_balance(&self, account: Address, height: DefaultBlock) -> Result<Amount> {
+        let hex = self.eth_getBalance(account, height.to_string()).await?;
+        let balance = Amount::try_from_hex_str(&hex)?;
         Ok(balance)
     }
 
     pub async fn gas_price(&self) -> Result<Ether> {
-        let gas = self.eth_gasPrice().await?;
+        let hex = self.eth_gasPrice().await?;
+        let gas = Ether::try_from_hex_str(&hex)?;
         Ok(gas)
     }
 
     pub async fn estimate_gas(&self) -> Result<Uint256> {
-        let gas = self.eth_estimateGas().await?;
+        let hex = self.eth_estimateGas().await?;
+        let gas = Uint256::from_str(&hex)?;
         Ok(gas)
     }
 }
@@ -112,4 +116,38 @@ pub struct EstimateGasRequest {
     pub value: Option<U256>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<Vec<u8>>,
+}
+
+/// The default block parameter (see API ref at top of file).
+#[derive(Clone, Copy, Debug)]
+pub enum DefaultBlock {
+    Num(u32),
+    Earliest,
+    Latest,
+    Pending,
+}
+
+impl Display for DefaultBlock {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            DefaultBlock::Num(n) => write!(f, "0x{:x?}", n),
+            DefaultBlock::Earliest => write!(f, "earliest"),
+            DefaultBlock::Latest => write!(f, "latest"),
+            DefaultBlock::Pending => write!(f, "pending"),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn display_default_block_num() {
+        let height = DefaultBlock::Num(1234);
+        let want = "0x4d2";
+        let got = format!("{}", height);
+
+        assert_eq!(got, want);
+    }
 }
