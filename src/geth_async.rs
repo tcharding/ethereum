@@ -1,4 +1,4 @@
-//! JSON RPC client for go-ethereum.
+//! Async JSON RPC client for go-ethereum.
 //! ref: https://eth.wiki/json-rpc/API
 use std::convert::TryFrom;
 use std::fmt::{self, Debug, Display, Formatter};

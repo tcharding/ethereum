@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use ethereum::geth::Client;
+use ethereum::geth_async::Client;
 
 #[tokio::main]
 async fn main() -> Result<()> {

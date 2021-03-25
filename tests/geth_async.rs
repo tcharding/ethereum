@@ -5,7 +5,7 @@ use std::str::FromStr;
 use anyhow::Result;
 use conquer_once::Lazy;
 
-use ethereum::geth::{Client, DefaultBlock};
+use ethereum::geth_async::{Client, DefaultBlock};
 use ethereum::{Address, Amount, ChainId};
 
 // URL of the geth node to test against.
