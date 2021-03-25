@@ -2,7 +2,7 @@
 //! ref: https://eth.wiki/json-rpc/API
 use std::fmt::{self, Debug, Display, Formatter};
 
-pub mod jsonrpc;
+pub mod jsonrpc_async;
 pub mod jsonrpc_client;
 
 /// The default block parameter (see API ref at top of file).
