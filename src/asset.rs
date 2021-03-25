@@ -112,7 +112,7 @@ impl fmt::Display for Amount {
         let (ether, rem) = self.0.div_rem(&WEI_IN_ETHER_BIGUINT);
 
         if rem.is_zero() {
-            write!(f, "{} ETH", ether)
+            write!(f, "{}", ether)
         } else {
             // format number as base 10
             let rem = rem.to_str_radix(10);
@@ -123,7 +123,7 @@ impl fmt::Display for Amount {
             // trim unnecessary 0s from the back
             let rem = rem.trim_end_matches('0');
 
-            write!(f, "{}.{} ETH", ether, rem)
+            write!(f, "{}.{}", ether, rem)
         }
     }
 }
@@ -180,7 +180,7 @@ impl<'de> Deserialize<'de> for Amount {
             type Value = Amount;
 
             fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-                formatter.write_str("A string representing a wei quantity")
+                formatter.write_str("A string representing a wei amount")
             }
 
             fn visit_str<E>(self, v: &str) -> Result<Amount, E>
@@ -188,8 +188,8 @@ impl<'de> Deserialize<'de> for Amount {
                 E: de::Error,
             {
                 let wei = BigUint::from_str(v).map_err(E::custom)?;
-                let quantity = Amount::try_from_wei(wei).map_err(E::custom)?;
-                Ok(quantity)
+                let amount = Amount::try_from_wei(wei).map_err(E::custom)?;
+                Ok(amount)
             }
         }
 
@@ -231,7 +231,7 @@ mod tests {
     fn given_9000_exa_wei_display_in_ether() {
         assert_eq!(
             Amount::from_wei(9_000 * *WEI_IN_ETHER_U128).to_string(),
-            "9000 ETH"
+            "9000"
         );
     }
 
@@ -239,7 +239,7 @@ mod tests {
     fn given_1_peta_wei_display_in_ether() {
         assert_eq!(
             Amount::from_wei(1_000_000_000_000_000u128).to_string(),
-            "0.001 ETH"
+            "0.001"
         );
     }
 
@@ -247,7 +247,7 @@ mod tests {
     fn given_some_weird_wei_number_formats_correctly_as_eth() {
         assert_eq!(
             Amount::from_wei(1_003_564_412_000_000_000u128).to_string(),
-            "1.003564412 ETH"
+            "1.003564412"
         );
     }
 
@@ -286,8 +286,8 @@ mod tests {
             std::u32::MAX,
             std::u32::MAX, // 9th u32, should make it over u256
         ]);
-        let quantity = Amount::try_from_wei(wei);
-        assert_eq!(quantity, Err(Error::Overflow))
+        let amount = Amount::try_from_wei(wei);
+        assert_eq!(amount, Err(Error::Overflow))
     }
 
     #[test]
@@ -302,15 +302,15 @@ mod tests {
             std::u32::MAX,
             std::u32::MAX,
         ]);
-        let quantity = Amount::try_from_wei(wei);
-        assert!(quantity.is_ok())
+        let amount = Amount::try_from_wei(wei);
+        assert!(amount.is_ok())
     }
 
     #[test]
     fn given_too_big_string_when_deserializing_return_overflow_error() {
-        let quantity_str =
+        let amount =
             "\"115792089237316195423570985008687907853269984665640564039457584007913129639936\""; // This is Amount::max_value() + 1
-        let res = serde_json::from_str::<Amount>(quantity_str);
+        let res = serde_json::from_str::<Amount>(amount);
         assert!(res.is_err())
     }
 
@@ -336,7 +336,7 @@ mod tests {
 
     #[test]
     fn display() {
-        let quantity = Amount::from_wei(123_456_789u64);
-        assert_eq!(quantity.to_string(), "123456789".to_string());
+        let amount = Amount::from_wei(123_456_789u64);
+        assert_eq!(amount.to_string(), "0.000000000123456789".to_string());
     }
 }

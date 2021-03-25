@@ -1,7 +1,7 @@
-//! Async JSON RPC client for go-ethereum.
+//! JSON RPC client for go-ethereum, uses the `jsonrpc_client` library.
 //! ref: https://eth.wiki/json-rpc/API
 use std::convert::TryFrom;
-use std::fmt::{self, Debug, Display, Formatter};
+use std::fmt::{self, Debug, Formatter};
 use std::str::FromStr;
 
 use anyhow::Result;
@@ -9,6 +9,7 @@ use clarity::Uint256;
 use ethereum_types::U256;
 use jsonrpc_client::{implement, Url};
 
+use crate::geth::DefaultBlock;
 use crate::{Address, Amount, ChainId, Ether, Hash, TransactionReceipt};
 
 #[jsonrpc_client::api(version = "1.0")]
@@ -116,26 +117,6 @@ pub struct EstimateGasRequest {
     pub value: Option<U256>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<Vec<u8>>,
-}
-
-/// The default block parameter (see API ref at top of file).
-#[derive(Clone, Copy, Debug)]
-pub enum DefaultBlock {
-    Num(u32),
-    Earliest,
-    Latest,
-    Pending,
-}
-
-impl Display for DefaultBlock {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            DefaultBlock::Num(n) => write!(f, "0x{:x?}", n),
-            DefaultBlock::Earliest => write!(f, "earliest"),
-            DefaultBlock::Latest => write!(f, "latest"),
-            DefaultBlock::Pending => write!(f, "pending"),
-        }
-    }
 }
 
 #[cfg(test)]
