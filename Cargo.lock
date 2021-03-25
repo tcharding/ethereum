@@ -206,6 +206,7 @@ dependencies = [
  "spectral",
  "thiserror",
  "tokio",
+ "url",
 ]
 
 [[package]]
