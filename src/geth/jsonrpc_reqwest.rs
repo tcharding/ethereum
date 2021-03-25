@@ -8,19 +8,19 @@ use ethereum_types::U256;
 pub use url::Url;
 
 use crate::{
-    jsonrpc_async, Address, Amount, ChainId, Erc20, Ether, Hash, TransactionReceipt,
+    jsonrpc_reqwest, Address, Amount, ChainId, Erc20, Ether, Hash, TransactionReceipt,
     UnformattedData,
 };
 
 #[derive(Debug, Clone)]
 pub struct Client {
-    inner: jsonrpc_async::Client,
+    inner: jsonrpc_reqwest::Client,
 }
 
 impl Client {
     pub fn new(url: Url) -> Self {
         Client {
-            inner: jsonrpc_async::Client::new(url),
+            inner: jsonrpc_reqwest::Client::new(url),
         }
     }
 
@@ -36,7 +36,7 @@ impl Client {
     pub async fn client_version(&self) -> Result<String> {
         let version = self
             .inner
-            .send::<Vec<()>, String>(jsonrpc_async::Request::v2("web3_clientVersion", vec![]))
+            .send::<Vec<()>, String>(jsonrpc_reqwest::Request::v2("web3_clientVersion", vec![]))
             .await
             .context("failed to fetch client version")?;
 
@@ -47,7 +47,7 @@ impl Client {
     pub async fn chain_id(&self) -> Result<ChainId> {
         let chain_id = self
             .inner
-            .send::<Vec<()>, String>(jsonrpc_async::Request::v2("net_version", vec![]))
+            .send::<Vec<()>, String>(jsonrpc_reqwest::Request::v2("net_version", vec![]))
             .await
             .context("failed to fetch net version")?;
         let chain_id: u32 = chain_id.parse()?;
@@ -60,9 +60,10 @@ impl Client {
     pub async fn send_raw_transaction(&self, transaction_hex: String) -> Result<Hash> {
         let tx_hash = self
             .inner
-            .send(jsonrpc_async::Request::v2("eth_sendRawTransaction", vec![
-                transaction_hex,
-            ]))
+            .send(jsonrpc_reqwest::Request::v2(
+                "eth_sendRawTransaction",
+                vec![transaction_hex],
+            ))
             .await
             .context("failed to send raw transaction")?;
 
@@ -76,9 +77,9 @@ impl Client {
     ) -> Result<Option<TransactionReceipt>> {
         let receipt = self
             .inner
-            .send(jsonrpc_async::Request::v2(
+            .send(jsonrpc_reqwest::Request::v2(
                 "eth_getTransactionReceipt",
-                vec![jsonrpc_async::serialize(transaction_hash)?],
+                vec![jsonrpc_reqwest::serialize(transaction_hash)?],
             ))
             .await
             .context("failed to get transaction receipt")?;
@@ -91,10 +92,13 @@ impl Client {
     pub async fn get_transaction_count(&self, account: Address) -> Result<u32> {
         let count: String = self
             .inner
-            .send(jsonrpc_async::Request::v2("eth_getTransactionCount", vec![
-                jsonrpc_async::serialize(account)?,
-                jsonrpc_async::serialize("latest")?,
-            ]))
+            .send(jsonrpc_reqwest::Request::v2(
+                "eth_getTransactionCount",
+                vec![
+                    jsonrpc_reqwest::serialize(account)?,
+                    jsonrpc_reqwest::serialize("latest")?,
+                ],
+            ))
             .await
             .context("failed to get transaction count")?;
 
@@ -116,9 +120,9 @@ impl Client {
 
         let amount: String = self
             .inner
-            .send(jsonrpc_async::Request::v2("eth_call", vec![
-                jsonrpc_async::serialize(call_request)?,
-                jsonrpc_async::serialize("latest")?,
+            .send(jsonrpc_reqwest::Request::v2("eth_call", vec![
+                jsonrpc_reqwest::serialize(call_request)?,
+                jsonrpc_reqwest::serialize("latest")?,
             ]))
             .await
             .context("failed to get erc20 token balance")?;
@@ -133,9 +137,9 @@ impl Client {
     pub async fn get_balance(&self, address: Address) -> Result<Ether> {
         let amount: String = self
             .inner
-            .send(jsonrpc_async::Request::v2("eth_getBalance", vec![
-                jsonrpc_async::serialize(address)?,
-                jsonrpc_async::serialize("latest")?,
+            .send(jsonrpc_reqwest::Request::v2("eth_getBalance", vec![
+                jsonrpc_reqwest::serialize(address)?,
+                jsonrpc_reqwest::serialize("latest")?,
             ]))
             .await
             .context("failed to get balance")?;
@@ -147,7 +151,7 @@ impl Client {
     pub async fn gas_price(&self) -> Result<Ether> {
         let amount = self
             .inner
-            .send::<Vec<()>, String>(jsonrpc_async::Request::v2("eth_gasPrice", vec![]))
+            .send::<Vec<()>, String>(jsonrpc_reqwest::Request::v2("eth_gasPrice", vec![]))
             .await
             .context("failed to get gas price")?;
         let amount = Ether::try_from_hex_str(&amount[2..])?;
@@ -158,8 +162,8 @@ impl Client {
     pub async fn gas_limit(&self, request: EstimateGasRequest) -> Result<clarity::Uint256> {
         let gas_limit: String = self
             .inner
-            .send(jsonrpc_async::Request::v2("eth_estimateGas", vec![
-                jsonrpc_async::serialize(request)?,
+            .send(jsonrpc_reqwest::Request::v2("eth_estimateGas", vec![
+                jsonrpc_reqwest::serialize(request)?,
             ]))
             .await
             .context("failed to get gas price")?;

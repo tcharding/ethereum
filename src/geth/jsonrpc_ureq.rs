@@ -3,23 +3,19 @@
 use std::str::FromStr;
 
 use anyhow::{Context, Result};
-use clarity::Uint256;
-use ethereum_types::U256;
 pub use url::Url;
 
-use crate::{
-    jsonrpc_ureq, Address, Amount, ChainId, Erc20, Ether, Hash, TransactionReceipt, UnformattedData,
-};
+use crate::jsonrpc_ureq;
 
 #[derive(Debug, Clone)]
 pub struct Client {
-    inner: jsonrpc_async::Client,
+    inner: jsonrpc_ureq::Client,
 }
 
 impl Client {
     pub fn new(url: Url) -> Self {
         Client {
-            inner: jsonrpc_async::Client::new(url),
+            inner: jsonrpc_ureq::Client::new(url),
         }
     }
 
@@ -35,7 +31,7 @@ impl Client {
     pub async fn client_version(&self) -> Result<String> {
         let version = self
             .inner
-            .send::<Vec<()>, String>(jsonrpc_async::Request::v2("web3_clientVersion", vec![]))
+            .send::<Vec<()>, String>(jsonrpc_ureq::Request::v2("web3_clientVersion", vec![]))
             .await
             .context("failed to fetch client version")?;
 
