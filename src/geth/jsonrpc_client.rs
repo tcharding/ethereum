@@ -1,5 +1,5 @@
-//! JSON RPC client for go-ethereum, uses the `jsonrpc_client` library.
-//! ref: https://eth.wiki/json-rpc/API
+//! JSON RPC client for go-ethereum, uses `reqwest` by way of the
+//! `jsonrpc_client` library. ref: https://eth.wiki/json-rpc/API
 use std::convert::TryFrom;
 use std::fmt::{self, Debug, Formatter};
 use std::str::FromStr;

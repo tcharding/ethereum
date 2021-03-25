@@ -2,8 +2,9 @@
 //! ref: https://eth.wiki/json-rpc/API
 use std::fmt::{self, Debug, Display, Formatter};
 
-pub mod jsonrpc_async;
-pub mod jsonrpc_client;
+pub mod jsonrpc_client; // Uses the `jsonrpc_client` library.
+pub mod jsonrpc_reqwest; // Uses the `reqwest` library.
+pub mod jsonrpc_ureq; // Uses the `ureq` library.
 
 /// The default block parameter (see API ref at top of file).
 #[derive(Clone, Copy, Debug)]

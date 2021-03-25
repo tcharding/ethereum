@@ -1,4 +1,4 @@
-//! JSON RPC client.
+//! Asynchronous JSON RPC client using `reqwest`.
 use std::fmt::Debug;
 
 use anyhow::{Context, Result};

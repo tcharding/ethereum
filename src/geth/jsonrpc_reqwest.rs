@@ -1,5 +1,5 @@
-//! JSON RPC client for go-ethereum, uses the `../jsonrpc_async` module.
-//! ref: https://eth.wiki/json-rpc/API
+//! JSON RPC client for go-ethereum, uses `reqwest` by way of
+//! `../jsonrpc_reqwest`. ref: https://eth.wiki/json-rpc/API
 use std::str::FromStr;
 
 use anyhow::{Context, Result};

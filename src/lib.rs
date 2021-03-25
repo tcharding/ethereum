@@ -28,7 +28,7 @@ pub use crate::asset::{Amount, Erc20, Ether};
 
 pub mod asset;
 pub mod geth;
-pub mod jsonrpc_async;
+pub mod jsonrpc_reqwest;
 
 /// Ethereum address size is 20 bytes (the last 20 bytes of the Keccak hashed
 /// pubkey).
