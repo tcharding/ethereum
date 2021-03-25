@@ -1,34 +1,39 @@
-//! Asynchronous JSON RPC client using `reqwest`.
+//! JSON RPC client using `ureq` (blocking IO).
 use std::fmt::Debug;
+use std::time::Duration;
 
 use anyhow::{Context, Result};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use thiserror::Error;
+use ureq::{Agent, AgentBuilder};
 use url::Url;
 
 #[derive(Clone, Debug)]
 pub struct Client {
-    inner: reqwest::Client,
+    agent: ureq::Agent,
     url: Url,
 }
 
 impl Client {
-    pub fn new(base_url: Url) -> Self {
-        Self {
-            inner: reqwest::Client::new(),
-            url: base_url,
-        }
+    /// Construct a new client using `url` as the base URL to connect to.
+    pub fn new(url: Url) -> Self {
+        let agent: Agent = AgentBuilder::new()
+            .timeout_read(Duration::from_secs(5))
+            .timeout_write(Duration::from_secs(5))
+            .build();
+
+        Self { agent, url }
     }
 
-    pub async fn send<Req, Res>(&self, request: Request<Req>) -> Result<Res>
+    pub fn send<Req, Res>(&self, request: Request<Req>) -> Result<Res>
     where
         Req: Debug + Serialize,
         Res: Debug + DeserializeOwned,
     {
-        self.send_with_path("".into(), request).await
+        self.send_with_path("".into(), request)
     }
 
-    pub async fn send_with_path<Req, Res>(&self, path: String, request: Request<Req>) -> Result<Res>
+    pub fn send_with_path<Req, Res>(&self, path: String, request: Request<Req>) -> Result<Res>
     where
         Req: Debug + Serialize,
         Res: Debug + DeserializeOwned,
@@ -36,14 +41,11 @@ impl Client {
         let url = self.url.clone().join(&path)?;
 
         let response = self
-            .inner
-            .post(url.clone())
-            .json(&request)
-            .send()
-            .await
+            .agent
+            .post(&url.to_string())
+            .send_json(ureq::json!(&request))
             .context("failed to send request")?
-            .json::<Response<Res>>()
-            .await
+            .into_json::<Response<Res>>()
             .context("failed to deserialize JSON response as JSON-RPC response")?
             .payload
             .into_result()
