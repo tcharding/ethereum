@@ -1,3 +1,4 @@
+use std::ops::{Add, Sub};
 use std::{fmt, str::FromStr};
 
 use conquer_once::Lazy;
@@ -206,6 +207,21 @@ impl Serialize for Amount {
     }
 }
 
+impl Add for Amount {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self(self.0.add(other.0))
+    }
+}
+
+impl Sub for Amount {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self(self.0.sub(other.0))
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -75,12 +75,12 @@ impl Client {
 
     /// Execute RPC method: `eth_getTransactionCount`. Return the number of
     /// transactions sent from this address.
-    pub fn get_transaction_count(&self, account: Address) -> Result<u32> {
+    pub fn get_transaction_count(&self, account: Address, height: DefaultBlock) -> Result<u32> {
         let count: String = self
             .inner
             .send(jsonrpc_ureq::Request::v2("eth_getTransactionCount", vec![
                 jsonrpc_ureq::serialize(account)?,
-                jsonrpc_ureq::serialize("latest")?,
+                jsonrpc_ureq::serialize(height.to_string())?,
             ]))
             .context("failed to get transaction count")?;
 
@@ -138,11 +138,12 @@ impl Client {
         Ok(amount)
     }
 
-    pub fn gas_limit(&self, request: EstimateGasRequest) -> Result<clarity::Uint256> {
+    pub fn gas_limit(&self, request: EthCall, height: DefaultBlock) -> Result<clarity::Uint256> {
         let gas_limit: String = self
             .inner
             .send(jsonrpc_ureq::Request::v2("eth_estimateGas", vec![
                 jsonrpc_ureq::serialize(request)?,
+                jsonrpc_ureq::serialize(height.to_string())?,
             ]))
             .context("failed to get gas price")?;
         let gas_limit = clarity::Uint256::from_str_radix(&gas_limit[2..], 16)?;
@@ -163,12 +164,15 @@ fn balance_of_fn(account: Address) -> Result<Vec<u8>> {
     Ok(balance_of)
 }
 
+// https://eth.wiki/json-rpc/API#eth_call
 #[derive(Debug, serde::Serialize)]
-pub struct EstimateGasRequest {
+pub struct EthCall {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub from: Option<Address>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub to: Option<Address>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub gas: Option<Uint256>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub gas_price: Option<Uint256>,
     #[serde(skip_serializing_if = "Option::is_none")]

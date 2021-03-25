@@ -5,7 +5,7 @@ use std::str::FromStr;
 use anyhow::Result;
 use conquer_once::Lazy;
 
-use ethereum::geth::jsonrpc_ureq::{Client, Url};
+use ethereum::geth::jsonrpc_ureq::{Client, EthCall, Url};
 use ethereum::geth::DefaultBlock;
 use ethereum::{Address, Amount, ChainId};
 
@@ -41,6 +41,25 @@ fn client() -> Client {
     Client::new(url)
 }
 
+fn empty_eth_call() -> EthCall {
+    EthCall {
+        from: None,
+        to: None,
+        gas: None,
+        gas_price: None,
+        value: None,
+        data: None,
+    }
+}
+
+fn earliest() -> DefaultBlock {
+    DefaultBlock::Earliest
+}
+
+fn latest() -> DefaultBlock {
+    DefaultBlock::Latest
+}
+
 #[test]
 fn can_connect_to_geth_node() -> Result<()> {
     let cli = client();
@@ -63,11 +82,24 @@ fn connected_to_expected_network() -> Result<()> {
 fn can_get_initial_balance_of_expected_accounts() -> Result<()> {
     let cli = client();
 
-    let got = cli.get_balance(*SEND_ADDR, DefaultBlock::Earliest)?;
+    let got = cli.get_balance(*SEND_ADDR, earliest())?;
     assert_eq!(got, *INITIAL_SEND_BALANCE);
 
-    let got = cli.get_balance(*RECEIVE_ADDR, DefaultBlock::Earliest)?;
+    let got = cli.get_balance(*RECEIVE_ADDR, earliest())?;
     assert_eq!(got, *INITIAL_RECEIVE_BALANCE);
+
+    Ok(())
+}
+
+#[test]
+fn can_get_initial_transaction_count_of_expected_accounts() -> Result<()> {
+    let cli = client();
+
+    let count = cli.get_transaction_count(*SEND_ADDR, earliest())?;
+    assert_eq!(count, 0);
+
+    let count = cli.get_transaction_count(*RECEIVE_ADDR, earliest())?;
+    assert_eq!(count, 0);
 
     Ok(())
 }
@@ -75,8 +107,55 @@ fn can_get_initial_balance_of_expected_accounts() -> Result<()> {
 #[test]
 fn can_get_gas_price() -> Result<()> {
     let cli = client();
-
     let _ = cli.gas_price()?;
+    Ok(())
+}
+
+#[test]
+fn can_estimate_gas() -> Result<()> {
+    let cli = client();
+    let req = empty_eth_call();
+    let _ = cli.gas_limit(req, earliest())?;
+    Ok(())
+}
+
+// Only one unit test sends transactions, this means we can rely on transaction
+// count and balances even though the tests are run in parallel.
+#[test]
+fn transaction() -> Result<()> {
+    let cli = client();
+
+    let send_balance_before = cli.get_balance(*SEND_ADDR, latest())?;
+    let receive_balance_before = cli.get_balance(*RECEIVE_ADDR, latest())?;
+
+    let send_txn_count_before = cli.get_transaction_count(*SEND_ADDR, latest())?;
+    let receive_txn_count_before = cli.get_transaction_count(*RECEIVE_ADDR, latest())?;
+
+    let (hex, amount) = build_transaction()?;
+    let _hash = cli.send_raw_transaction(hex)?;
+
+    // TODO: uncomment     let receipt = cli.get_transaciton_receipt(hash)?;
+
+    let send_balance_after = cli.get_balance(*SEND_ADDR, latest())?;
+    let receive_balance_after = cli.get_balance(*RECEIVE_ADDR, latest())?;
+
+    let send_txn_count_after = cli.get_transaction_count(*SEND_ADDR, latest())?;
+    let receive_txn_count_after = cli.get_transaction_count(*RECEIVE_ADDR, latest())?;
+
+    assert!(send_txn_count_before + 1 == send_txn_count_after);
+    assert!(receive_txn_count_before + 1 == receive_txn_count_after);
+
+    // We don't know what the fees will be so just check that the after balance is
+    // less than the original after deducting the amount sent.
+    let with_amount_deducted = send_balance_before - amount.clone();
+    assert!(send_balance_after < with_amount_deducted);
+
+    let with_amount_added = receive_balance_before + amount;
+    assert_eq!(receive_balance_after, with_amount_added);
 
     Ok(())
+}
+
+fn build_transaction() -> Result<(String, Amount)> {
+    todo!()
 }
