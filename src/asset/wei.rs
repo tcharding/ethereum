@@ -9,7 +9,7 @@ use serde::ser::Serializer;
 use serde::{Deserialize, Serialize};
 
 use crate::asset::{Error, WEI_IN_ETHER_BIGUINT};
-use crate::U256;
+use crate::types::U256;
 
 #[derive(Debug, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct Wei(BigUint);

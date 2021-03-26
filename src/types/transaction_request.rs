@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::types::Bytes;
-use crate::U256;
+use crate::types::{Bytes, U256};
 
 pub use ethereum_types::H160;
 
