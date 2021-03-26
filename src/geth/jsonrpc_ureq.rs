@@ -138,7 +138,7 @@ impl Client {
         Ok(amount.into())
     }
 
-    pub fn gas_limit(&self, request: EthCall, height: DefaultBlock) -> Result<clarity::Uint256> {
+    pub fn gas_limit(&self, request: EthCall, height: DefaultBlock) -> Result<Uint256> {
         let gas_limit: String = self
             .inner
             .send(jsonrpc_ureq::Request::v2("eth_estimateGas", vec![
@@ -146,7 +146,7 @@ impl Client {
                 jsonrpc_ureq::serialize(height.to_string())?,
             ]))
             .context("failed to get gas price")?;
-        let gas_limit = clarity::Uint256::from_str_radix(&gas_limit[2..], 16)?;
+        let gas_limit = Uint256::from_str_radix(&gas_limit[2..], 16)?;
 
         Ok(gas_limit)
     }

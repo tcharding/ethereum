@@ -158,7 +158,7 @@ impl Client {
         Ok(amount.into())
     }
 
-    pub async fn gas_limit(&self, request: EstimateGasRequest) -> Result<clarity::Uint256> {
+    pub async fn gas_limit(&self, request: EstimateGasRequest) -> Result<Uint256> {
         let gas_limit: String = self
             .inner
             .send(jsonrpc_reqwest::Request::v2("eth_estimateGas", vec![
@@ -166,7 +166,7 @@ impl Client {
             ]))
             .await
             .context("failed to get gas price")?;
-        let gas_limit = clarity::Uint256::from_str_radix(&gas_limit[2..], 16)?;
+        let gas_limit = Uint256::from_str_radix(&gas_limit[2..], 16)?;
 
         Ok(gas_limit)
     }
