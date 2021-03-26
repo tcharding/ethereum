@@ -10,7 +10,7 @@ use ethereum_types::U256;
 use jsonrpc_client::{implement, Url};
 
 use crate::geth::DefaultBlock;
-use crate::{Address, Amount, ChainId, Ether, Hash, TransactionReceipt};
+use crate::{Address, ChainId, Gwei, Hash, TransactionReceipt, Wei};
 
 #[jsonrpc_client::api(version = "1.0")]
 trait GethRpc {
@@ -77,16 +77,16 @@ impl Client {
         Ok(count)
     }
 
-    pub async fn get_balance(&self, account: Address, height: DefaultBlock) -> Result<Amount> {
+    pub async fn get_balance(&self, account: Address, height: DefaultBlock) -> Result<Wei> {
         let hex = self.eth_getBalance(account, height.to_string()).await?;
-        let balance = Amount::try_from_hex_str(&hex)?;
+        let balance = Wei::try_from_hex_str(&hex)?;
         Ok(balance)
     }
 
-    pub async fn gas_price(&self) -> Result<Ether> {
+    pub async fn gas_price(&self) -> Result<Gwei> {
         let hex = self.eth_gasPrice().await?;
-        let gas = Ether::try_from_hex_str(&hex)?;
-        Ok(gas)
+        let gas = Wei::try_from_hex_str(&hex)?;
+        Ok(gas.into())
     }
 
     pub async fn estimate_gas(&self) -> Result<Uint256> {

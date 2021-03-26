@@ -18,13 +18,12 @@ use std::fmt::{self, Display, Formatter};
 use std::num::ParseIntError;
 use std::str::FromStr;
 
-use anyhow::Result;
 pub use ethbloom::Bloom as H2048;
 use hex::FromHexError;
 pub use primitive_types::U256;
 use serde::{Deserialize, Deserializer, Serialize};
 
-pub use crate::asset::{Amount, Erc20, Ether};
+pub use crate::asset::{Erc20, Ether, Gwei, Wei};
 
 pub mod asset;
 pub mod geth;

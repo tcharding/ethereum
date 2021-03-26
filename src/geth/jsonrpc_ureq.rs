@@ -8,7 +8,7 @@ pub use url::Url;
 
 use crate::geth::DefaultBlock;
 use crate::{
-    jsonrpc_ureq, Address, Amount, ChainId, Erc20, Ether, Hash, TransactionReceipt, UnformattedData,
+    jsonrpc_ureq, Address, ChainId, Erc20, Ether, Hash, TransactionReceipt, UnformattedData, Wei,
 };
 
 #[derive(Debug, Clone)]
@@ -107,7 +107,7 @@ impl Client {
                 jsonrpc_ureq::serialize("latest")?,
             ]))
             .context("failed to get erc20 token balance")?;
-        let amount = Amount::try_from_hex_str(&amount)?;
+        let amount = Wei::try_from_hex_str(&amount)?;
 
         Ok(Erc20 {
             token_contract,
@@ -123,9 +123,9 @@ impl Client {
                 jsonrpc_ureq::serialize(height.to_string())?,
             ]))
             .context("failed to get balance")?;
-        let amount = Ether::try_from_hex_str(&amount)?;
+        let amount = Wei::try_from_hex_str(&amount)?;
 
-        Ok(amount)
+        Ok(amount.into())
     }
 
     pub fn gas_price(&self) -> Result<Ether> {
@@ -133,9 +133,9 @@ impl Client {
             .inner
             .send::<Vec<()>, String>(jsonrpc_ureq::Request::v2("eth_gasPrice", vec![]))
             .context("failed to get gas price")?;
-        let amount = Ether::try_from_hex_str(&amount[2..])?;
+        let amount = Wei::try_from_hex_str(&amount[2..])?;
 
-        Ok(amount)
+        Ok(amount.into())
     }
 
     pub fn gas_limit(&self, request: EthCall, height: DefaultBlock) -> Result<clarity::Uint256> {

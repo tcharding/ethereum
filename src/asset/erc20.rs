@@ -2,14 +2,14 @@ use std::fmt::{self, Display, Formatter};
 
 use serde::{Deserialize, Serialize};
 
-use crate::asset::Amount;
+use crate::asset::Wei;
 use crate::Address;
 
 /// ERC-20 standard token.
 #[derive(Debug, Deserialize, Serialize, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct Erc20 {
     pub token_contract: Address,
-    pub amount: Amount,
+    pub amount: Wei,
 }
 
 impl Display for Erc20 {
@@ -19,7 +19,7 @@ impl Display for Erc20 {
 }
 
 impl Erc20 {
-    pub fn new(token_contract: Address, amount: Amount) -> Self {
+    pub fn new(token_contract: Address, amount: Wei) -> Self {
         Erc20 {
             token_contract,
             amount,

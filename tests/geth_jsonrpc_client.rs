@@ -7,7 +7,7 @@ use conquer_once::Lazy;
 
 use ethereum::geth::jsonrpc_client::Client;
 use ethereum::geth::DefaultBlock;
-use ethereum::{Address, Amount, ChainId};
+use ethereum::{Address, ChainId, Wei};
 
 // URL of the geth node to test against.
 const GETH_URL: &str = "http://localhost:8545/";
@@ -29,11 +29,10 @@ static SEND_ADDR: Lazy<Address> =
 static RECEIVE_ADDR: Lazy<Address> =
     Lazy::new(|| Address::from_str(RECEIVE).expect("failed to parse const address string"));
 
-static INITIAL_SEND_BALANCE: Lazy<Amount> = Lazy::new(|| {
-    Amount::from_wei_dec_str(INITIAL_SEND).expect("failed to parse const amount string")
-});
-static INITIAL_RECEIVE_BALANCE: Lazy<Amount> = Lazy::new(|| {
-    Amount::from_wei_dec_str(INITIAL_RECEIVE).expect("failed to parse const amount string")
+static INITIAL_SEND_BALANCE: Lazy<Wei> =
+    Lazy::new(|| Wei::try_from_dec_str(INITIAL_SEND).expect("failed to parse const amount string"));
+static INITIAL_RECEIVE_BALANCE: Lazy<Wei> = Lazy::new(|| {
+    Wei::try_from_dec_str(INITIAL_RECEIVE).expect("failed to parse const amount string")
 });
 
 #[tokio::test]

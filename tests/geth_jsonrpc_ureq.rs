@@ -7,7 +7,7 @@ use conquer_once::Lazy;
 
 use ethereum::geth::jsonrpc_ureq::{Client, EthCall, Url};
 use ethereum::geth::DefaultBlock;
-use ethereum::{Address, Amount, ChainId};
+use ethereum::{Address, ChainId, Ether, Wei};
 
 // URL of the geth node to test against.
 const GETH_URL: &str = "http://localhost:8545/";
@@ -29,11 +29,13 @@ static SEND_ADDR: Lazy<Address> =
 static RECEIVE_ADDR: Lazy<Address> =
     Lazy::new(|| Address::from_str(RECEIVE).expect("failed to parse const address string"));
 
-static INITIAL_SEND_BALANCE: Lazy<Amount> = Lazy::new(|| {
-    Amount::from_wei_dec_str(INITIAL_SEND).expect("failed to parse const amount string")
+static INITIAL_SEND_BALANCE: Lazy<Ether> = Lazy::new(|| {
+    Ether::from(Wei::try_from_dec_str(INITIAL_SEND).expect("failed to parse const amount string"))
 });
-static INITIAL_RECEIVE_BALANCE: Lazy<Amount> = Lazy::new(|| {
-    Amount::from_wei_dec_str(INITIAL_RECEIVE).expect("failed to parse const amount string")
+static INITIAL_RECEIVE_BALANCE: Lazy<Ether> = Lazy::new(|| {
+    Ether::from(
+        Wei::try_from_dec_str(INITIAL_RECEIVE).expect("failed to parse const amount string"),
+    )
 });
 
 fn client() -> Client {
@@ -147,15 +149,15 @@ fn transaction() -> Result<()> {
 
     // We don't know what the fees will be so just check that the after balance is
     // less than the original after deducting the amount sent.
-    let with_amount_deducted = send_balance_before - amount.clone();
+    let with_amount_deducted = send_balance_before - Ether::from(amount.clone());
     assert!(send_balance_after < with_amount_deducted);
 
-    let with_amount_added = receive_balance_before + amount;
+    let with_amount_added = receive_balance_before + Ether::from(amount);
     assert_eq!(receive_balance_after, with_amount_added);
 
     Ok(())
 }
 
-fn build_transaction() -> Result<(String, Amount)> {
+fn build_transaction() -> Result<(String, Wei)> {
     todo!()
 }

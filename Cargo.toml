@@ -5,7 +5,7 @@ authors = ["Tobin Harding <me@tobin.cc>"]
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0"
+anyhow = "1.0"                  # TODO: Move this to dev-dependencies.
 async-trait = "0.1"
 clarity = "0.4"
 conquer-once = "0.3"

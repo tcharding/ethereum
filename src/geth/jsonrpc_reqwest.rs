@@ -8,8 +8,7 @@ use ethereum_types::U256;
 pub use url::Url;
 
 use crate::{
-    jsonrpc_reqwest, Address, Amount, ChainId, Erc20, Ether, Hash, TransactionReceipt,
-    UnformattedData,
+    jsonrpc_reqwest, Address, ChainId, Erc20, Ether, Hash, TransactionReceipt, UnformattedData, Wei,
 };
 
 #[derive(Debug, Clone)]
@@ -126,7 +125,7 @@ impl Client {
             ]))
             .await
             .context("failed to get erc20 token balance")?;
-        let amount = Amount::try_from_hex_str(&amount)?;
+        let amount = Wei::try_from_hex_str(&amount)?;
 
         Ok(Erc20 {
             token_contract,
@@ -143,9 +142,9 @@ impl Client {
             ]))
             .await
             .context("failed to get balance")?;
-        let amount = Ether::try_from_hex_str(&amount)?;
+        let wei = Wei::try_from_hex_str(&amount)?;
 
-        Ok(amount)
+        Ok(wei.into())
     }
 
     pub async fn gas_price(&self) -> Result<Ether> {
@@ -154,9 +153,9 @@ impl Client {
             .send::<Vec<()>, String>(jsonrpc_reqwest::Request::v2("eth_gasPrice", vec![]))
             .await
             .context("failed to get gas price")?;
-        let amount = Ether::try_from_hex_str(&amount[2..])?;
+        let amount = Wei::try_from_hex_str(&amount[2..])?;
 
-        Ok(amount)
+        Ok(amount.into())
     }
 
     pub async fn gas_limit(&self, request: EstimateGasRequest) -> Result<clarity::Uint256> {
