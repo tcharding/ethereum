@@ -7,19 +7,19 @@ use clarity::Uint256;
 use crate::geth::GethClient;
 use crate::geth::{DefaultBlock, EthCall};
 pub use crate::jsonrpc_ureq::Url;
-use crate::{
-    jsonrpc_ureq, Address, ChainId, Erc20, Ether, Hash, TransactionReceipt, UnformattedData, Wei,
-};
+use crate::{Address, ChainId, Erc20, Ether, Hash, TransactionReceipt, UnformattedData, Wei};
+
+use crate::jsonrpc_ureq as rpc;
 
 #[derive(Debug, Clone)]
 pub struct Client {
-    inner: jsonrpc_ureq::Client,
+    inner: rpc::Client,
 }
 
 impl GethClient for Client {
     fn new(base_url: Url) -> Self {
         Client {
-            inner: jsonrpc_ureq::Client::new(base_url),
+            inner: rpc::Client::new(base_url),
         }
     }
 
@@ -28,7 +28,7 @@ impl GethClient for Client {
     fn client_version(&self) -> Result<String> {
         let version = self
             .inner
-            .send::<Vec<()>, String>(jsonrpc_ureq::Request::v2("web3_clientVersion", vec![]))?;
+            .send::<Vec<()>, String>(rpc::Request::v2("web3_clientVersion", vec![]))?;
 
         Ok(version)
     }
@@ -37,7 +37,7 @@ impl GethClient for Client {
     fn chain_id(&self) -> Result<ChainId> {
         let chain_id = self
             .inner
-            .send::<Vec<()>, String>(jsonrpc_ureq::Request::v2("net_version", vec![]))
+            .send::<Vec<()>, String>(rpc::Request::v2("net_version", vec![]))
             .context("failed to fetch net version")?;
         let chain_id: u32 = chain_id.parse()?;
         let chain_id = ChainId::from(chain_id);
@@ -49,7 +49,7 @@ impl GethClient for Client {
     fn send_raw_transaction(&self, transaction_hex: String) -> Result<Hash> {
         let tx_hash = self
             .inner
-            .send(jsonrpc_ureq::Request::v2("eth_sendRawTransaction", vec![
+            .send(rpc::Request::v2("eth_sendRawTransaction", vec![
                 transaction_hex,
             ]))
             .context("failed to send raw transaction")?;
@@ -64,10 +64,9 @@ impl GethClient for Client {
     ) -> Result<Option<TransactionReceipt>> {
         let receipt = self
             .inner
-            .send(jsonrpc_ureq::Request::v2(
-                "eth_getTransactionReceipt",
-                vec![jsonrpc_ureq::serialize(transaction_hash)?],
-            ))
+            .send(rpc::Request::v2("eth_getTransactionReceipt", vec![
+                rpc::serialize(transaction_hash)?,
+            ]))
             .context("failed to get transaction receipt")?;
 
         Ok(receipt)
@@ -78,9 +77,9 @@ impl GethClient for Client {
     fn get_transaction_count(&self, account: Address, height: DefaultBlock) -> Result<u32> {
         let count: String = self
             .inner
-            .send(jsonrpc_ureq::Request::v2("eth_getTransactionCount", vec![
-                jsonrpc_ureq::serialize(account)?,
-                jsonrpc_ureq::serialize(height.to_string())?,
+            .send(rpc::Request::v2("eth_getTransactionCount", vec![
+                rpc::serialize(account)?,
+                rpc::serialize(height.to_string())?,
             ]))
             .context("failed to get transaction count")?;
 
@@ -102,9 +101,9 @@ impl GethClient for Client {
 
         let amount: String = self
             .inner
-            .send(jsonrpc_ureq::Request::v2("eth_call", vec![
-                jsonrpc_ureq::serialize(call_request)?,
-                jsonrpc_ureq::serialize("latest")?,
+            .send(rpc::Request::v2("eth_call", vec![
+                rpc::serialize(call_request)?,
+                rpc::serialize("latest")?,
             ]))
             .context("failed to get erc20 token balance")?;
         let amount = Wei::try_from_hex_str(&amount)?;
@@ -118,9 +117,9 @@ impl GethClient for Client {
     fn get_balance(&self, address: Address, height: DefaultBlock) -> Result<Ether> {
         let amount: String = self
             .inner
-            .send(jsonrpc_ureq::Request::v2("eth_getBalance", vec![
-                jsonrpc_ureq::serialize(address)?,
-                jsonrpc_ureq::serialize(height.to_string())?,
+            .send(rpc::Request::v2("eth_getBalance", vec![
+                rpc::serialize(address)?,
+                rpc::serialize(height.to_string())?,
             ]))
             .context("failed to get balance")?;
         let amount = Wei::try_from_hex_str(&amount)?;
@@ -131,7 +130,7 @@ impl GethClient for Client {
     fn gas_price(&self) -> Result<Ether> {
         let amount = self
             .inner
-            .send::<Vec<()>, String>(jsonrpc_ureq::Request::v2("eth_gasPrice", vec![]))
+            .send::<Vec<()>, String>(rpc::Request::v2("eth_gasPrice", vec![]))
             .context("failed to get gas price")?;
         let amount = Wei::try_from_hex_str(&amount[2..])?;
 
@@ -141,9 +140,9 @@ impl GethClient for Client {
     fn gas_limit(&self, request: EthCall, height: DefaultBlock) -> Result<Uint256> {
         let gas_limit: String = self
             .inner
-            .send(jsonrpc_ureq::Request::v2("eth_estimateGas", vec![
-                jsonrpc_ureq::serialize(request)?,
-                jsonrpc_ureq::serialize(height.to_string())?,
+            .send(rpc::Request::v2("eth_estimateGas", vec![
+                rpc::serialize(request)?,
+                rpc::serialize(height.to_string())?,
             ]))
             .context("failed to get gas price")?;
         let gas_limit = Uint256::from_str_radix(&gas_limit[2..], 16)?;
