@@ -5,9 +5,9 @@ use std::fmt::{self, Debug, Display, Formatter};
 use anyhow::Result;
 use async_trait::async_trait;
 use clarity::Uint256;
-use ethereum_types::U256;
 
 use crate::jsonrpc_ureq::Url;
+use crate::transaction_request::CallRequest;
 use crate::{Address, ChainId, Erc20, Ether, Gwei, Hash, TransactionReceipt};
 
 pub mod jsonrpc_client; // Uses the `jsonrpc_client` library.
@@ -63,7 +63,7 @@ pub trait GethClient {
 
     fn gas_price(&self) -> Result<Ether>;
 
-    fn gas_limit(&self, request: EthCall, height: DefaultBlock) -> Result<Uint256>;
+    fn gas_limit(&self, request: CallRequest, height: DefaultBlock) -> Result<Uint256>;
 }
 
 /// This is exactly the same as `GethClient` except with `async` methods.
@@ -97,22 +97,5 @@ pub trait GethClientAsync {
 
     async fn gas_price(&self) -> Result<Gwei>;
 
-    async fn gas_limit(&self, request: EthCall, height: DefaultBlock) -> Result<Uint256>;
-}
-
-// https://eth.wiki/json-rpc/API#eth_call
-#[derive(Debug, serde::Serialize)]
-pub struct EthCall {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub from: Option<Address>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub to: Option<Address>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub gas: Option<Uint256>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub gas_price: Option<Uint256>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub value: Option<U256>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub data: Option<Vec<u8>>,
+    async fn gas_limit(&self, request: CallRequest, height: DefaultBlock) -> Result<Uint256>;
 }

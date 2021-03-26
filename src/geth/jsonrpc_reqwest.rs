@@ -4,8 +4,9 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use clarity::Uint256;
 
-use crate::geth::{DefaultBlock, EthCall, GethClientAsync};
+use crate::geth::{DefaultBlock, GethClientAsync};
 pub use crate::jsonrpc_reqwest::Url;
+use crate::transaction_request::CallRequest;
 use crate::{Address, ChainId, Erc20, Ether, Gwei, Hash, TransactionReceipt, UnformattedData, Wei};
 
 use crate::jsonrpc_reqwest as rpc;
@@ -146,7 +147,7 @@ impl GethClientAsync for Client {
         })
     }
 
-    async fn gas_limit(&self, request: EthCall, height: DefaultBlock) -> Result<Uint256> {
+    async fn gas_limit(&self, request: CallRequest, height: DefaultBlock) -> Result<Uint256> {
         let gas_limit: String = self
             .inner
             .send(rpc::Request::v2("eth_estimateGas", vec![

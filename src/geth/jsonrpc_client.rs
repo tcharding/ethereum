@@ -10,7 +10,8 @@ use clarity::Uint256;
 use jsonrpc_client::implement;
 pub use jsonrpc_client::Url;
 
-use crate::geth::{DefaultBlock, EthCall, GethClientAsync};
+use crate::geth::{DefaultBlock, GethClientAsync};
+use crate::transaction_request::CallRequest;
 use crate::{Address, ChainId, Erc20, Ether, Gwei, Hash, TransactionReceipt, Wei};
 
 #[jsonrpc_client::api(version = "1.0")]
@@ -30,7 +31,7 @@ trait GethRpc {
     #[allow(non_snake_case)]
     async fn eth_gasPrice(&self) -> String;
     #[allow(non_snake_case)]
-    async fn eth_estimateGas(&self, request: EthCall, height: String) -> String;
+    async fn eth_estimateGas(&self, request: CallRequest, height: String) -> String;
 }
 
 #[implement(GethRpc)]
@@ -96,7 +97,7 @@ impl GethClientAsync for Client {
         Ok(gas.into())
     }
 
-    async fn gas_limit(&self, request: EthCall, height: DefaultBlock) -> Result<Uint256> {
+    async fn gas_limit(&self, request: CallRequest, height: DefaultBlock) -> Result<Uint256> {
         let hex = self.eth_estimateGas(request, height.to_string()).await?;
         let gas = Uint256::from_str(&hex)?;
         Ok(gas)

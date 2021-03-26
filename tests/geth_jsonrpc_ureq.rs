@@ -6,7 +6,8 @@ use anyhow::Result;
 use conquer_once::Lazy;
 
 use ethereum::geth::jsonrpc_ureq::{Client, Url};
-use ethereum::geth::{DefaultBlock, EthCall, GethClient};
+use ethereum::geth::{DefaultBlock, GethClient};
+use ethereum::transaction_request::CallRequest;
 use ethereum::{Address, ChainId, Ether, Wei};
 
 // URL of the geth node to test against.
@@ -43,8 +44,8 @@ fn client() -> Client {
     Client::new(url)
 }
 
-fn empty_eth_call() -> EthCall {
-    EthCall {
+fn empty_eth_call() -> CallRequest {
+    CallRequest {
         from: None,
         to: None,
         gas: None,

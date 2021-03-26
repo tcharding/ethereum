@@ -4,9 +4,10 @@
 use anyhow::{Context, Result};
 use clarity::Uint256;
 
+use crate::geth::DefaultBlock;
 use crate::geth::GethClient;
-use crate::geth::{DefaultBlock, EthCall};
 pub use crate::jsonrpc_ureq::Url;
+use crate::transaction_request::CallRequest;
 use crate::{Address, ChainId, Erc20, Ether, Hash, TransactionReceipt, UnformattedData, Wei};
 
 use crate::jsonrpc_ureq as rpc;
@@ -137,7 +138,7 @@ impl GethClient for Client {
         Ok(amount.into())
     }
 
-    fn gas_limit(&self, request: EthCall, height: DefaultBlock) -> Result<Uint256> {
+    fn gas_limit(&self, request: CallRequest, height: DefaultBlock) -> Result<Uint256> {
         let gas_limit: String = self
             .inner
             .send(rpc::Request::v2("eth_estimateGas", vec![
