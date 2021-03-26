@@ -179,14 +179,43 @@ dependencies = [
 ]
 
 [[package]]
+name = "ethabi"
+version = "13.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "53d4e679d6864bc26210feb5cf044e245741cd9d7701b35c00440a6e84d61399"
+dependencies = [
+ "anyhow",
+ "ethereum-types",
+ "hex",
+ "serde",
+ "serde_json",
+ "sha3",
+ "thiserror",
+ "uint",
+]
+
+[[package]]
 name = "ethbloom"
 version = "0.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "71a6567e6fd35589fea0c63b94b4cf2e55573e413901bdbe60ab15cf0e25e5df"
 dependencies = [
  "crunchy",
- "fixed-hash",
- "impl-rlp",
+ "fixed-hash 0.6.1",
+ "impl-rlp 0.2.1",
+ "impl-serde",
+ "tiny-keccak",
+]
+
+[[package]]
+name = "ethbloom"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22a621dcebea74f2a6f2002d0a885c81ccf6cbdf86760183316a7722b5707ca4"
+dependencies = [
+ "crunchy",
+ "fixed-hash 0.7.0",
+ "impl-rlp 0.3.0",
  "impl-serde",
  "tiny-keccak",
 ]
@@ -199,19 +228,21 @@ dependencies = [
  "async-trait",
  "clarity",
  "conquer-once",
- "ethbloom",
+ "ethabi",
+ "ethbloom 0.9.2",
  "ethereum-types",
  "hex",
  "hex-literal",
  "jsonrpc_client",
  "num 0.4.0",
- "primitive-types",
  "rand 0.8.3",
  "reqwest",
+ "secp256k1",
  "serde",
  "serde_json",
  "spectral",
  "thiserror",
+ "tiny-keccak",
  "tokio",
  "ureq",
  "url",
@@ -219,13 +250,13 @@ dependencies = [
 
 [[package]]
 name = "ethereum-types"
-version = "0.9.2"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "473aecff686bd8e7b9db0165cbbb53562376b39bf35b427f0c60446a9e1634b0"
+checksum = "05dc5f0df4915fa6dff7f975a8366ecfaaa8959c74235469495153e7bb1b280e"
 dependencies = [
- "ethbloom",
- "fixed-hash",
- "impl-rlp",
+ "ethbloom 0.10.0",
+ "fixed-hash 0.7.0",
+ "impl-rlp 0.3.0",
  "impl-serde",
  "primitive-types",
  "uint",
@@ -239,6 +270,18 @@ checksum = "11498d382790b7a8f2fd211780bec78619bba81cdad3a283997c0c41f836759c"
 dependencies = [
  "byteorder",
  "rand 0.7.3",
+ "rustc-hex",
+ "static_assertions",
+]
+
+[[package]]
+name = "fixed-hash"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfcf0ed7fe52a17a03854ec54a9f76d6d84508d1c0e66bc1793301c73fc8493c"
+dependencies = [
+ "byteorder",
+ "rand 0.8.3",
  "rustc-hex",
  "static_assertions",
 ]
@@ -463,7 +506,16 @@ version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f7a72f11830b52333f36e3b09a288333888bf54380fd0ac0790a3c31ab0f3c5"
 dependencies = [
- "rlp",
+ "rlp 0.4.6",
+]
+
+[[package]]
+name = "impl-rlp"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f28220f89297a075ddc7245cd538076ee98b01f2a9c23a53a4f1105d5a322808"
+dependencies = [
+ "rlp 0.5.0",
 ]
 
 [[package]]
@@ -881,13 +933,13 @@ checksum = "ac74c624d6b2d21f425f752262f42188365d7b8ff1aff74c82e45136510a4857"
 
 [[package]]
 name = "primitive-types"
-version = "0.7.3"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7dd39dcacf71411ba488570da7bbc89b717225e46478b30ba99b92db6b149809"
+checksum = "b3824ae2c5e27160113b9e029a10ec9e3f0237bad8029f69c7724393c9fdefd8"
 dependencies = [
- "fixed-hash",
+ "fixed-hash 0.7.0",
  "impl-codec",
- "impl-rlp",
+ "impl-rlp 0.3.0",
  "impl-serde",
  "uint",
 ]
@@ -1050,6 +1102,16 @@ version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1190dcc8c3a512f1eef5d09bb8c84c7f39e1054e174d1795482e18f5272f2e73"
 dependencies = [
+ "rustc-hex",
+]
+
+[[package]]
+name = "rlp"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e54369147e3e7796c9b885c7304db87ca3d09a0a98f72843d532868675bbfba8"
+dependencies = [
+ "bytes",
  "rustc-hex",
 ]
 
@@ -1365,13 +1427,13 @@ checksum = "879f6906492a7cd215bfa4cf595b600146ccfac0c79bcbd1f3000162af5e8b06"
 
 [[package]]
 name = "uint"
-version = "0.8.5"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9db035e67dfaf7edd9aebfe8676afcd63eed53c8a4044fed514c8cccf1835177"
+checksum = "e11fe9a9348741cf134085ad57c249508345fe16411b3d7fb4ff2da2f1d6382e"
 dependencies = [
  "byteorder",
  "crunchy",
- "rustc-hex",
+ "hex",
  "static_assertions",
 ]
 

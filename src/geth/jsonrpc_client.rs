@@ -10,9 +10,9 @@ use clarity::Uint256;
 use jsonrpc_client::implement;
 pub use jsonrpc_client::Url;
 
-use crate::geth::{DefaultBlock, GethClientAsync};
-use crate::types::CallRequest;
-use crate::{Address, ChainId, Erc20, Ether, Gwei, Hash, TransactionReceipt, Wei};
+use crate::geth::{BlockNumber, GethClientAsync};
+use crate::types::{CallRequest, TransactionReceipt, H256};
+use crate::{Address, ChainId, Ether, Gwei, Wei};
 
 #[jsonrpc_client::api(version = "1.0")]
 trait GethRpc {
@@ -21,17 +21,17 @@ trait GethRpc {
     #[allow(non_snake_case)]
     async fn net_version(&self) -> String;
     #[allow(non_snake_case)]
-    async fn eth_sendRawTransaction(&self, txn_hex: String) -> Hash;
+    async fn eth_sendRawTransaction(&self, txn_hex: String) -> H256;
     #[allow(non_snake_case)]
-    async fn eth_getTransactionReceipt(&self, txn: Hash) -> Option<TransactionReceipt>;
+    async fn eth_getTransactionReceipt(&self, txn: H256) -> Option<TransactionReceipt>;
     #[allow(non_snake_case)]
-    async fn eth_getTransactionCount(&self, account: Address, height: String) -> u32;
+    async fn eth_getTransactionCount(&self, account: Address, height: BlockNumber) -> u32;
     #[allow(non_snake_case)]
-    async fn eth_getBalance(&self, account: Address, height: String) -> String;
+    async fn eth_getBalance(&self, account: Address, height: BlockNumber) -> String;
     #[allow(non_snake_case)]
     async fn eth_gasPrice(&self) -> String;
     #[allow(non_snake_case)]
-    async fn eth_estimateGas(&self, request: CallRequest, height: String) -> String;
+    async fn eth_estimateGas(&self, request: CallRequest, height: BlockNumber) -> String;
 }
 
 #[implement(GethRpc)]
@@ -61,34 +61,28 @@ impl GethClientAsync for Client {
         Ok(chain_id)
     }
 
-    async fn send_raw_transaction(&self, transaction_hex: String) -> Result<Hash> {
+    async fn send_raw_transaction(&self, transaction_hex: String) -> Result<H256> {
         let hash = self.eth_sendRawTransaction(transaction_hex).await?;
         Ok(hash)
     }
 
     async fn get_transaction_receipt(
         &self,
-        transaction_hash: Hash,
+        transaction_hash: H256,
     ) -> Result<Option<TransactionReceipt>> {
         let receipt = self.eth_getTransactionReceipt(transaction_hash).await?;
         Ok(receipt)
     }
 
-    async fn get_transaction_count(&self, account: Address, height: DefaultBlock) -> Result<u32> {
-        let count = self
-            .eth_getTransactionCount(account, height.to_string())
-            .await?;
+    async fn get_transaction_count(&self, account: Address, height: BlockNumber) -> Result<u32> {
+        let count = self.eth_getTransactionCount(account, height).await?;
         Ok(count)
     }
 
-    async fn get_balance(&self, account: Address, height: DefaultBlock) -> Result<Ether> {
-        let hex = self.eth_getBalance(account, height.to_string()).await?;
+    async fn get_balance(&self, account: Address, height: BlockNumber) -> Result<Ether> {
+        let hex = self.eth_getBalance(account, height).await?;
         let balance = Wei::try_from_hex_str(&hex)?;
         Ok(balance.into())
-    }
-
-    async fn erc20_balance(&self, _account: Address, _token_contract: Address) -> Result<Erc20> {
-        todo!()
     }
 
     async fn gas_price(&self) -> Result<Gwei> {
@@ -97,8 +91,8 @@ impl GethClientAsync for Client {
         Ok(gas.into())
     }
 
-    async fn gas_limit(&self, request: CallRequest, height: DefaultBlock) -> Result<Uint256> {
-        let hex = self.eth_estimateGas(request, height.to_string()).await?;
+    async fn gas_limit(&self, request: CallRequest, height: BlockNumber) -> Result<Uint256> {
+        let hex = self.eth_estimateGas(request, height).await?;
         let gas = Uint256::from_str(&hex)?;
         Ok(gas)
     }
@@ -110,19 +104,5 @@ impl Debug for Client {
             .field("inner", &self.inner)
             .field("base_url", &self.base_url)
             .finish()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn display_default_block_num() {
-        let height = DefaultBlock::Num(1234);
-        let want = "0x4d2";
-        let got = format!("{}", height);
-
-        assert_eq!(got, want);
     }
 }

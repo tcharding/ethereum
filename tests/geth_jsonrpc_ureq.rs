@@ -6,8 +6,8 @@ use anyhow::Result;
 use conquer_once::Lazy;
 
 use ethereum::geth::jsonrpc_ureq::{Client, Url};
-use ethereum::geth::{DefaultBlock, GethClient};
-use ethereum::types::CallRequest;
+use ethereum::geth::GethClient;
+use ethereum::types::{BlockNumber, CallRequest};
 use ethereum::{Address, ChainId, Ether, Wei};
 
 // URL of the geth node to test against.
@@ -55,12 +55,12 @@ fn empty_eth_call() -> CallRequest {
     }
 }
 
-fn earliest() -> DefaultBlock {
-    DefaultBlock::Earliest
+fn earliest() -> BlockNumber {
+    BlockNumber::Earliest
 }
 
-fn latest() -> DefaultBlock {
-    DefaultBlock::Latest
+fn latest() -> BlockNumber {
+    BlockNumber::Latest
 }
 
 #[test]

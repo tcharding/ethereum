@@ -4,11 +4,11 @@
 use anyhow::{Context, Result};
 use clarity::Uint256;
 
-use crate::geth::DefaultBlock;
+use crate::geth::BlockNumber;
 use crate::geth::GethClient;
 pub use crate::jsonrpc_ureq::Url;
-use crate::types::CallRequest;
-use crate::{Address, ChainId, Erc20, Ether, Hash, TransactionReceipt, UnformattedData, Wei};
+use crate::types::{CallRequest, TransactionReceipt, H256};
+use crate::{Address, ChainId, Ether, Wei};
 
 use crate::jsonrpc_ureq as rpc;
 
@@ -47,7 +47,7 @@ impl GethClient for Client {
     }
 
     /// Execute RPC method: `eth_sendRawTransaction`. Return transaction hash.
-    fn send_raw_transaction(&self, transaction_hex: String) -> Result<Hash> {
+    fn send_raw_transaction(&self, transaction_hex: String) -> Result<H256> {
         let tx_hash = self
             .inner
             .send(rpc::Request::v2("eth_sendRawTransaction", vec![
@@ -61,7 +61,7 @@ impl GethClient for Client {
     /// Execute RPC method: `eth_getTransactionReceipt`.
     fn get_transaction_receipt(
         &self,
-        transaction_hash: Hash,
+        transaction_hash: H256,
     ) -> Result<Option<TransactionReceipt>> {
         let receipt = self
             .inner
@@ -75,12 +75,12 @@ impl GethClient for Client {
 
     /// Execute RPC method: `eth_getTransactionCount`. Return the number of
     /// transactions sent from this address.
-    fn get_transaction_count(&self, account: Address, height: DefaultBlock) -> Result<u32> {
+    fn get_transaction_count(&self, account: Address, height: BlockNumber) -> Result<u32> {
         let count: String = self
             .inner
             .send(rpc::Request::v2("eth_getTransactionCount", vec![
                 rpc::serialize(account)?,
-                rpc::serialize(height.to_string())?,
+                rpc::serialize(height)?,
             ]))
             .context("failed to get transaction count")?;
 
@@ -88,39 +88,12 @@ impl GethClient for Client {
         Ok(count)
     }
 
-    fn erc20_balance(&self, account: Address, token_contract: Address) -> Result<Erc20> {
-        #[derive(Debug, serde::Serialize)]
-        struct CallRequest {
-            to: Address,
-            data: UnformattedData,
-        }
-
-        let call_request = CallRequest {
-            to: token_contract,
-            data: UnformattedData(balance_of_fn(account)?),
-        };
-
-        let amount: String = self
-            .inner
-            .send(rpc::Request::v2("eth_call", vec![
-                rpc::serialize(call_request)?,
-                rpc::serialize("latest")?,
-            ]))
-            .context("failed to get erc20 token balance")?;
-        let amount = Wei::try_from_hex_str(&amount)?;
-
-        Ok(Erc20 {
-            token_contract,
-            amount,
-        })
-    }
-
-    fn get_balance(&self, address: Address, height: DefaultBlock) -> Result<Ether> {
+    fn get_balance(&self, address: Address, height: BlockNumber) -> Result<Ether> {
         let amount: String = self
             .inner
             .send(rpc::Request::v2("eth_getBalance", vec![
                 rpc::serialize(address)?,
-                rpc::serialize(height.to_string())?,
+                rpc::serialize(height)?,
             ]))
             .context("failed to get balance")?;
         let amount = Wei::try_from_hex_str(&amount)?;
@@ -138,28 +111,16 @@ impl GethClient for Client {
         Ok(amount.into())
     }
 
-    fn gas_limit(&self, request: CallRequest, height: DefaultBlock) -> Result<Uint256> {
+    fn gas_limit(&self, request: CallRequest, height: BlockNumber) -> Result<Uint256> {
         let gas_limit: String = self
             .inner
             .send(rpc::Request::v2("eth_estimateGas", vec![
                 rpc::serialize(request)?,
-                rpc::serialize(height.to_string())?,
+                rpc::serialize(height)?,
             ]))
             .context("failed to get gas price")?;
         let gas_limit = Uint256::from_str_radix(&gas_limit[2..], 16)?;
 
         Ok(gas_limit)
     }
-}
-
-fn balance_of_fn(account: Address) -> Result<Vec<u8>> {
-    let account = clarity::Address::from_slice(account.as_bytes())
-        .map_err(|_| anyhow::anyhow!("Could not construct clarity::Address from slice"))?;
-
-    let balance_of =
-        clarity::abi::encode_call("balanceOf(address)", &[clarity::abi::Token::Address(
-            account,
-        )])?;
-
-    Ok(balance_of)
 }

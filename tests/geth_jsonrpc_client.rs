@@ -6,7 +6,8 @@ use anyhow::Result;
 use conquer_once::Lazy;
 
 use ethereum::geth::jsonrpc_client::{Client, Url};
-use ethereum::geth::{DefaultBlock, GethClientAsync};
+use ethereum::geth::GethClientAsync;
+use ethereum::types::BlockNumber;
 use ethereum::{Address, ChainId, Ether, Wei};
 
 // URL of the geth node to test against.
@@ -65,11 +66,11 @@ async fn connected_to_expected_network() -> Result<()> {
 async fn can_get_initial_balance_of_expected_accounts() -> Result<()> {
     let cli = client();
 
-    let got = cli.get_balance(*SEND_ADDR, DefaultBlock::Earliest).await?;
+    let got = cli.get_balance(*SEND_ADDR, BlockNumber::Earliest).await?;
     assert_eq!(got, *INITIAL_SEND_BALANCE);
 
     let got = cli
-        .get_balance(*RECEIVE_ADDR, DefaultBlock::Earliest)
+        .get_balance(*RECEIVE_ADDR, BlockNumber::Earliest)
         .await?;
     assert_eq!(got, *INITIAL_RECEIVE_BALANCE);
 
