@@ -5,8 +5,8 @@ use std::str::FromStr;
 use anyhow::Result;
 use conquer_once::Lazy;
 
-use ethereum::geth::jsonrpc_ureq::{Client, EthCall, Url};
-use ethereum::geth::DefaultBlock;
+use ethereum::geth::jsonrpc_ureq::{Client, Url};
+use ethereum::geth::{DefaultBlock, EthCall, GethClient};
 use ethereum::{Address, ChainId, Ether, Wei};
 
 // URL of the geth node to test against.
@@ -134,9 +134,10 @@ fn transaction() -> Result<()> {
     let receive_txn_count_before = cli.get_transaction_count(*RECEIVE_ADDR, latest())?;
 
     let (hex, amount) = build_transaction()?;
-    let _hash = cli.send_raw_transaction(hex)?;
+    let hash = cli.send_raw_transaction(hex)?;
 
-    // TODO: uncomment     let receipt = cli.get_transaciton_receipt(hash)?;
+    let receipt = cli.get_transaction_receipt(hash)?;
+    assert!(receipt.is_some());
 
     let send_balance_after = cli.get_balance(*SEND_ADDR, latest())?;
     let receive_balance_after = cli.get_balance(*RECEIVE_ADDR, latest())?;
@@ -158,6 +159,7 @@ fn transaction() -> Result<()> {
     Ok(())
 }
 
+// Create a raw signed Ethereum transaction.
 fn build_transaction() -> Result<(String, Wei)> {
     todo!()
 }

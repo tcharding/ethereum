@@ -6,7 +6,7 @@ use anyhow::{Context, Result};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use thiserror::Error;
 use ureq::{Agent, AgentBuilder};
-use url::Url;
+pub use url::Url;
 
 #[derive(Clone, Debug)]
 pub struct Client {

@@ -1,14 +1,14 @@
 //! JSON RPC client for go-ethereum, uses `reqwest` by way of
 //! `../jsonrpc_reqwest`. ref: https://eth.wiki/json-rpc/API
-use std::str::FromStr;
-
 use anyhow::{Context, Result};
+use async_trait::async_trait;
 use clarity::Uint256;
-use ethereum_types::U256;
-pub use url::Url;
 
+use crate::geth::{DefaultBlock, EthCall, GethClientAsync};
+pub use crate::jsonrpc_reqwest::Url;
 use crate::{
-    jsonrpc_reqwest, Address, ChainId, Erc20, Ether, Hash, TransactionReceipt, UnformattedData, Wei,
+    jsonrpc_reqwest, Address, ChainId, Erc20, Ether, Gwei, Hash, TransactionReceipt,
+    UnformattedData, Wei,
 };
 
 #[derive(Debug, Clone)]
@@ -16,23 +16,17 @@ pub struct Client {
     inner: jsonrpc_reqwest::Client,
 }
 
-impl Client {
-    pub fn new(url: Url) -> Self {
+#[async_trait]
+impl GethClientAsync for Client {
+    fn new(url: Url) -> Self {
         Client {
             inner: jsonrpc_reqwest::Client::new(url),
         }
     }
 
-    pub fn localhost() -> Result<Self> {
-        let url = Url::from_str("http://localhost:8545/")?;
-        let client = Client::new(url);
-
-        Ok(client)
-    }
-
     /// Execute RPC method: `web3_clientVersion`. Return version string:
     /// "Geth/v1.10.2-unstable-f304290b-20210323/linux-amd64/go1.13.8"
-    pub async fn client_version(&self) -> Result<String> {
+    async fn client_version(&self) -> Result<String> {
         let version = self
             .inner
             .send::<Vec<()>, String>(jsonrpc_reqwest::Request::v2("web3_clientVersion", vec![]))
@@ -43,7 +37,7 @@ impl Client {
     }
 
     /// Execute RPC method: `net_version`. Return network id (chain id).
-    pub async fn chain_id(&self) -> Result<ChainId> {
+    async fn chain_id(&self) -> Result<ChainId> {
         let chain_id = self
             .inner
             .send::<Vec<()>, String>(jsonrpc_reqwest::Request::v2("net_version", vec![]))
@@ -56,7 +50,7 @@ impl Client {
     }
 
     /// Execute RPC method: `eth_sendRawTransaction`. Return transaction hash.
-    pub async fn send_raw_transaction(&self, transaction_hex: String) -> Result<Hash> {
+    async fn send_raw_transaction(&self, transaction_hex: String) -> Result<Hash> {
         let tx_hash = self
             .inner
             .send(jsonrpc_reqwest::Request::v2(
@@ -70,7 +64,7 @@ impl Client {
     }
 
     /// Execute RPC method: `eth_getTransactionReceipt`.
-    pub async fn get_transaction_receipt(
+    async fn get_transaction_receipt(
         &self,
         transaction_hash: Hash,
     ) -> Result<Option<TransactionReceipt>> {
@@ -88,14 +82,14 @@ impl Client {
 
     /// Execute RPC method: `eth_getTransactionCount`. Return the number of
     /// transactions sent from this address.
-    pub async fn get_transaction_count(&self, account: Address) -> Result<u32> {
+    async fn get_transaction_count(&self, account: Address, height: DefaultBlock) -> Result<u32> {
         let count: String = self
             .inner
             .send(jsonrpc_reqwest::Request::v2(
                 "eth_getTransactionCount",
                 vec![
                     jsonrpc_reqwest::serialize(account)?,
-                    jsonrpc_reqwest::serialize("latest")?,
+                    jsonrpc_reqwest::serialize(height.to_string())?,
                 ],
             ))
             .await
@@ -105,7 +99,32 @@ impl Client {
         Ok(count)
     }
 
-    pub async fn erc20_balance(&self, account: Address, token_contract: Address) -> Result<Erc20> {
+    async fn get_balance(&self, address: Address, height: DefaultBlock) -> Result<Ether> {
+        let amount: String = self
+            .inner
+            .send(jsonrpc_reqwest::Request::v2("eth_getBalance", vec![
+                jsonrpc_reqwest::serialize(address)?,
+                jsonrpc_reqwest::serialize(height.to_string())?,
+            ]))
+            .await
+            .context("failed to get balance")?;
+        let wei = Wei::try_from_hex_str(&amount)?;
+
+        Ok(wei.into())
+    }
+
+    async fn gas_price(&self) -> Result<Gwei> {
+        let amount = self
+            .inner
+            .send::<Vec<()>, String>(jsonrpc_reqwest::Request::v2("eth_gasPrice", vec![]))
+            .await
+            .context("failed to get gas price")?;
+        let amount = Wei::try_from_hex_str(&amount[2..])?;
+
+        Ok(amount.into())
+    }
+
+    async fn erc20_balance(&self, account: Address, token_contract: Address) -> Result<Erc20> {
         #[derive(Debug, serde::Serialize)]
         struct CallRequest {
             to: Address,
@@ -133,36 +152,12 @@ impl Client {
         })
     }
 
-    pub async fn get_balance(&self, address: Address) -> Result<Ether> {
-        let amount: String = self
-            .inner
-            .send(jsonrpc_reqwest::Request::v2("eth_getBalance", vec![
-                jsonrpc_reqwest::serialize(address)?,
-                jsonrpc_reqwest::serialize("latest")?,
-            ]))
-            .await
-            .context("failed to get balance")?;
-        let wei = Wei::try_from_hex_str(&amount)?;
-
-        Ok(wei.into())
-    }
-
-    pub async fn gas_price(&self) -> Result<Ether> {
-        let amount = self
-            .inner
-            .send::<Vec<()>, String>(jsonrpc_reqwest::Request::v2("eth_gasPrice", vec![]))
-            .await
-            .context("failed to get gas price")?;
-        let amount = Wei::try_from_hex_str(&amount[2..])?;
-
-        Ok(amount.into())
-    }
-
-    pub async fn gas_limit(&self, request: EstimateGasRequest) -> Result<Uint256> {
+    async fn gas_limit(&self, request: EthCall, height: DefaultBlock) -> Result<Uint256> {
         let gas_limit: String = self
             .inner
             .send(jsonrpc_reqwest::Request::v2("eth_estimateGas", vec![
                 jsonrpc_reqwest::serialize(request)?,
+                jsonrpc_reqwest::serialize(height.to_string())?,
             ]))
             .await
             .context("failed to get gas price")?;
@@ -182,18 +177,4 @@ fn balance_of_fn(account: Address) -> Result<Vec<u8>> {
         )])?;
 
     Ok(balance_of)
-}
-
-#[derive(Debug, serde::Serialize)]
-pub struct EstimateGasRequest {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub from: Option<Address>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub to: Option<Address>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub gas_price: Option<Uint256>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub value: Option<U256>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub data: Option<Vec<u8>>,
 }

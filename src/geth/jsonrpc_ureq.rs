@@ -3,10 +3,10 @@
 
 use anyhow::{Context, Result};
 use clarity::Uint256;
-use ethereum_types::U256;
-pub use url::Url;
 
-use crate::geth::DefaultBlock;
+use crate::geth::GethClient;
+use crate::geth::{DefaultBlock, EthCall};
+pub use crate::jsonrpc_ureq::Url;
 use crate::{
     jsonrpc_ureq, Address, ChainId, Erc20, Ether, Hash, TransactionReceipt, UnformattedData, Wei,
 };
@@ -16,8 +16,8 @@ pub struct Client {
     inner: jsonrpc_ureq::Client,
 }
 
-impl Client {
-    pub fn new(base_url: Url) -> Self {
+impl GethClient for Client {
+    fn new(base_url: Url) -> Self {
         Client {
             inner: jsonrpc_ureq::Client::new(base_url),
         }
@@ -25,7 +25,7 @@ impl Client {
 
     /// Execute RPC method: `web3_clientVersion`. Return version string:
     /// "Geth/v1.10.2-unstable-f304290b-20210323/linux-amd64/go1.13.8"
-    pub fn client_version(&self) -> Result<String> {
+    fn client_version(&self) -> Result<String> {
         let version = self
             .inner
             .send::<Vec<()>, String>(jsonrpc_ureq::Request::v2("web3_clientVersion", vec![]))?;
@@ -34,7 +34,7 @@ impl Client {
     }
 
     /// Execute RPC method: `net_version`. Return network id (chain id).
-    pub fn chain_id(&self) -> Result<ChainId> {
+    fn chain_id(&self) -> Result<ChainId> {
         let chain_id = self
             .inner
             .send::<Vec<()>, String>(jsonrpc_ureq::Request::v2("net_version", vec![]))
@@ -46,7 +46,7 @@ impl Client {
     }
 
     /// Execute RPC method: `eth_sendRawTransaction`. Return transaction hash.
-    pub fn send_raw_transaction(&self, transaction_hex: String) -> Result<Hash> {
+    fn send_raw_transaction(&self, transaction_hex: String) -> Result<Hash> {
         let tx_hash = self
             .inner
             .send(jsonrpc_ureq::Request::v2("eth_sendRawTransaction", vec![
@@ -58,7 +58,7 @@ impl Client {
     }
 
     /// Execute RPC method: `eth_getTransactionReceipt`.
-    pub fn get_transaction_receipt(
+    fn get_transaction_receipt(
         &self,
         transaction_hash: Hash,
     ) -> Result<Option<TransactionReceipt>> {
@@ -75,7 +75,7 @@ impl Client {
 
     /// Execute RPC method: `eth_getTransactionCount`. Return the number of
     /// transactions sent from this address.
-    pub fn get_transaction_count(&self, account: Address, height: DefaultBlock) -> Result<u32> {
+    fn get_transaction_count(&self, account: Address, height: DefaultBlock) -> Result<u32> {
         let count: String = self
             .inner
             .send(jsonrpc_ureq::Request::v2("eth_getTransactionCount", vec![
@@ -88,7 +88,7 @@ impl Client {
         Ok(count)
     }
 
-    pub fn erc20_balance(&self, account: Address, token_contract: Address) -> Result<Erc20> {
+    fn erc20_balance(&self, account: Address, token_contract: Address) -> Result<Erc20> {
         #[derive(Debug, serde::Serialize)]
         struct CallRequest {
             to: Address,
@@ -115,7 +115,7 @@ impl Client {
         })
     }
 
-    pub fn get_balance(&self, address: Address, height: DefaultBlock) -> Result<Ether> {
+    fn get_balance(&self, address: Address, height: DefaultBlock) -> Result<Ether> {
         let amount: String = self
             .inner
             .send(jsonrpc_ureq::Request::v2("eth_getBalance", vec![
@@ -128,7 +128,7 @@ impl Client {
         Ok(amount.into())
     }
 
-    pub fn gas_price(&self) -> Result<Ether> {
+    fn gas_price(&self) -> Result<Ether> {
         let amount = self
             .inner
             .send::<Vec<()>, String>(jsonrpc_ureq::Request::v2("eth_gasPrice", vec![]))
@@ -138,7 +138,7 @@ impl Client {
         Ok(amount.into())
     }
 
-    pub fn gas_limit(&self, request: EthCall, height: DefaultBlock) -> Result<Uint256> {
+    fn gas_limit(&self, request: EthCall, height: DefaultBlock) -> Result<Uint256> {
         let gas_limit: String = self
             .inner
             .send(jsonrpc_ureq::Request::v2("eth_estimateGas", vec![
@@ -162,21 +162,4 @@ fn balance_of_fn(account: Address) -> Result<Vec<u8>> {
         )])?;
 
     Ok(balance_of)
-}
-
-// https://eth.wiki/json-rpc/API#eth_call
-#[derive(Debug, serde::Serialize)]
-pub struct EthCall {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub from: Option<Address>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub to: Option<Address>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub gas: Option<Uint256>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub gas_price: Option<Uint256>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub value: Option<U256>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub data: Option<Vec<u8>>,
 }

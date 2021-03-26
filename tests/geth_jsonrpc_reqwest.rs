@@ -5,6 +5,7 @@ use std::str::FromStr;
 use anyhow::Result;
 
 use ethereum::geth::jsonrpc_reqwest::{Client, Url};
+use ethereum::geth::GethClientAsync;
 
 // URL of the geth node to test against.
 const GETH_URL: &str = "http://localhost:8545/";

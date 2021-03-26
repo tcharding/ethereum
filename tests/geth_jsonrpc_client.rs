@@ -5,9 +5,9 @@ use std::str::FromStr;
 use anyhow::Result;
 use conquer_once::Lazy;
 
-use ethereum::geth::jsonrpc_client::Client;
-use ethereum::geth::DefaultBlock;
-use ethereum::{Address, ChainId, Wei};
+use ethereum::geth::jsonrpc_client::{Client, Url};
+use ethereum::geth::{DefaultBlock, GethClientAsync};
+use ethereum::{Address, ChainId, Ether, Wei};
 
 // URL of the geth node to test against.
 const GETH_URL: &str = "http://localhost:8545/";
@@ -29,22 +29,30 @@ static SEND_ADDR: Lazy<Address> =
 static RECEIVE_ADDR: Lazy<Address> =
     Lazy::new(|| Address::from_str(RECEIVE).expect("failed to parse const address string"));
 
-static INITIAL_SEND_BALANCE: Lazy<Wei> =
-    Lazy::new(|| Wei::try_from_dec_str(INITIAL_SEND).expect("failed to parse const amount string"));
-static INITIAL_RECEIVE_BALANCE: Lazy<Wei> = Lazy::new(|| {
-    Wei::try_from_dec_str(INITIAL_RECEIVE).expect("failed to parse const amount string")
+static INITIAL_SEND_BALANCE: Lazy<Ether> = Lazy::new(|| {
+    Ether::from(Wei::try_from_dec_str(INITIAL_SEND).expect("failed to parse const amount string"))
 });
+static INITIAL_RECEIVE_BALANCE: Lazy<Ether> = Lazy::new(|| {
+    Ether::from(
+        Wei::try_from_dec_str(INITIAL_RECEIVE).expect("failed to parse const amount string"),
+    )
+});
+
+fn client() -> Client {
+    let url = Url::from_str(GETH_URL).expect("failed to parse url");
+    Client::new(url)
+}
 
 #[tokio::test]
 async fn can_connect_to_geth_node() -> Result<()> {
-    let cli = Client::new(GETH_URL)?;
+    let cli = client();
     let _ = cli.client_version().await?;
     Ok(())
 }
 
 #[tokio::test]
 async fn connected_to_expected_network() -> Result<()> {
-    let cli = Client::new(GETH_URL)?;
+    let cli = client();
 
     let got = cli.chain_id().await?;
     let want = ChainId::from(CHAIN_ID);
@@ -55,7 +63,7 @@ async fn connected_to_expected_network() -> Result<()> {
 
 #[tokio::test]
 async fn can_get_initial_balance_of_expected_accounts() -> Result<()> {
-    let cli = Client::new(GETH_URL)?;
+    let cli = client();
 
     let got = cli.get_balance(*SEND_ADDR, DefaultBlock::Earliest).await?;
     assert_eq!(got, *INITIAL_SEND_BALANCE);
@@ -70,7 +78,7 @@ async fn can_get_initial_balance_of_expected_accounts() -> Result<()> {
 
 #[tokio::test]
 async fn can_get_gas_price() -> Result<()> {
-    let cli = Client::new(GETH_URL)?;
+    let cli = client();
 
     let _ = cli.gas_price().await?;
 
