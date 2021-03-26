@@ -1,20 +1,12 @@
 Library for interacting with Ethereum
 =====================================
 
-This code was distilled out of code in the `comit-network`'s [comit-rs repository](https://github.com/comit-network/comit-rs/]).
+This repository is partly for me to learn how to program Ethereum and partly to
+be used in a closed source work project. It is largely made up of code stolen
+from open source repositories. Collecting all the code here in case I happen to
+make any improvements then they can be upstream from here.
 
-It retains the GPLv3 license. I intend on using this inside an Intel SGX enclave
-so any 'improvements' will unlikely be of interest to the upstream authors.
+### Reference repos:
 
-
-TODO
-----
-
-Add in the prop test and quickcheck stuff from the original code.
-
-- https://docs.rs/proptest/1.0.0/proptest/
-- https://altsysrq.github.io/proptest-book/intro.html
-- https://github.com/BurntSushi/quickcheck
-
-Write/import integration tests that run against a geth instance to test the RPC
-client.
+- [comit-rs](https://github.com/comit-network/comit-rs/] 
+- [web3](https://github.com/tomusdrw/rust-web3)
