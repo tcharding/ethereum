@@ -1,6 +1,7 @@
-//! Taken from github.com/tomusdrw/rust-web3/src/types
-use crate::{Bytes, U256};
 use serde::{Deserialize, Serialize};
+
+use crate::types::Bytes;
+use crate::U256;
 
 pub use ethereum_types::H160;
 

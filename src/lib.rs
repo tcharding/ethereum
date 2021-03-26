@@ -24,17 +24,14 @@ pub use primitive_types::U256;
 use serde::{Deserialize, Deserializer, Serialize};
 
 pub use crate::asset::{Erc20, Ether, Gwei, Wei};
-pub use crate::bytes::Bytes;
 
 pub mod asset;
-pub mod bytes;
 pub mod geth;
 pub mod jsonrpc_reqwest;
 pub mod jsonrpc_ureq;
-pub mod transaction_request;
+pub mod types;
 
-/// Ethereum address size is 20 bytes (the last 20 bytes of the Keccak hashed
-/// pubkey).
+/// Ethereum address size is 20 bytes (last 20 bytes of Keccak hashed pubkey).
 pub const ADDR_SIZE: usize = 20;
 
 #[derive(

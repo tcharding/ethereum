@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use clarity::Uint256;
 
 use crate::jsonrpc_ureq::Url;
-use crate::transaction_request::CallRequest;
+use crate::types::CallRequest;
 use crate::{Address, ChainId, Erc20, Ether, Gwei, Hash, TransactionReceipt};
 
 pub mod jsonrpc_client; // Uses the `jsonrpc_client` library.

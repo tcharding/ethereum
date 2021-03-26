@@ -7,7 +7,7 @@ use clarity::Uint256;
 use crate::geth::DefaultBlock;
 use crate::geth::GethClient;
 pub use crate::jsonrpc_ureq::Url;
-use crate::transaction_request::CallRequest;
+use crate::types::CallRequest;
 use crate::{Address, ChainId, Erc20, Ether, Hash, TransactionReceipt, UnformattedData, Wei};
 
 use crate::jsonrpc_ureq as rpc;

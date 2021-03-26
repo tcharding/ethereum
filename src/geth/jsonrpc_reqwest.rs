@@ -6,7 +6,7 @@ use clarity::Uint256;
 
 use crate::geth::{DefaultBlock, GethClientAsync};
 pub use crate::jsonrpc_reqwest::Url;
-use crate::transaction_request::CallRequest;
+use crate::types::CallRequest;
 use crate::{Address, ChainId, Erc20, Ether, Gwei, Hash, TransactionReceipt, UnformattedData, Wei};
 
 use crate::jsonrpc_reqwest as rpc;

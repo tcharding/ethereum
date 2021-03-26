@@ -1,4 +1,3 @@
-//! Taken from github.com/tomusdrw/rust-web3/src/types
 use std::fmt;
 
 use serde::{

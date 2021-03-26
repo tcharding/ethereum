@@ -7,7 +7,7 @@ use conquer_once::Lazy;
 
 use ethereum::geth::jsonrpc_ureq::{Client, Url};
 use ethereum::geth::{DefaultBlock, GethClient};
-use ethereum::transaction_request::CallRequest;
+use ethereum::types::CallRequest;
 use ethereum::{Address, ChainId, Ether, Wei};
 
 // URL of the geth node to test against.

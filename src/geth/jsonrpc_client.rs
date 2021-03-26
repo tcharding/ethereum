@@ -11,7 +11,7 @@ use jsonrpc_client::implement;
 pub use jsonrpc_client::Url;
 
 use crate::geth::{DefaultBlock, GethClientAsync};
-use crate::transaction_request::CallRequest;
+use crate::types::CallRequest;
 use crate::{Address, ChainId, Erc20, Ether, Gwei, Hash, TransactionReceipt, Wei};
 
 #[jsonrpc_client::api(version = "1.0")]
