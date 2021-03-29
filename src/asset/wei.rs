@@ -2,6 +2,7 @@ use std::convert::TryFrom;
 use std::ops::{Add, Sub};
 use std::{fmt, str::FromStr};
 
+use clarity::Uint256;
 use num::pow::Pow;
 use num::{BigUint, Integer, Num, Zero};
 use serde::de::{self, Deserializer};
@@ -90,6 +91,18 @@ impl_from_primitive!(u16);
 impl_from_primitive!(u32);
 impl_from_primitive!(u64);
 impl_from_primitive!(u128);
+
+impl From<Uint256> for Wei {
+    fn from(wei: Uint256) -> Self {
+        Self((*wei).clone())
+    }
+}
+
+impl From<Wei> for Uint256 {
+    fn from(wei: Wei) -> Self {
+        Uint256(wei.0)
+    }
+}
 
 impl From<U256> for Wei {
     fn from(wei: U256) -> Self {
@@ -183,8 +196,7 @@ impl From<Wei> for Gwei {
 
 impl fmt::Display for Gwei {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        // TODO: Implement Display for Gwei.
-        write!(f, "{}", self.0)
+        write!(f, "TODO: implement Display for Gwei")
     }
 }
 

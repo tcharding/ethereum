@@ -1,12 +1,13 @@
 Library for interacting with Ethereum
 =====================================
 
-This repository is partly for me to learn how to program Ethereum and partly to
-be used in a closed source work project. It is largely made up of code stolen
-from open source repositories. Collecting all the code here in case I happen to
-make any improvements then they can be upstream from here.
+This repository is to learn how to program Ethereum.
 
-### Reference repos:
+Infura integration tests
+------------------------
 
-- [comit-rs](https://github.com/comit-network/comit-rs/] 
-- [web3](https://github.com/tomusdrw/rust-web3)
+Integration tests send ether from Alice to Bob. In order to run them make sure
+there is ether in Alice's account.
+
+Alice's address: 0x0EB44ea45B049fc225Cfdf07883dD89C7FeBd8f0
+Bob's address: 0x29F9022a926F25b6b98642C357AEbdf2BfE39970

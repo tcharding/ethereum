@@ -22,8 +22,9 @@ pub use secp256k1::{PublicKey, SecretKey};
 use serde::{Deserialize, Serialize};
 
 pub use crate::asset::{Erc20, Ether, Gwei, Wei};
-pub use crate::types::Address;
+use crate::types::Address;
 
+pub mod api;
 pub mod asset;
 pub mod geth;
 pub mod jsonrpc_reqwest;

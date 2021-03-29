@@ -1,6 +1,8 @@
 use std::fmt::{self, Display, Formatter};
 use std::ops::{Add, Sub};
 
+use clarity::Uint256;
+
 use crate::asset::{Error, Wei, Zero};
 
 /// Ether, the native token of the Ethereum chain.
@@ -47,6 +49,18 @@ impl Display for Ether {
 impl From<Wei> for Ether {
     fn from(wei: Wei) -> Self {
         Self(wei)
+    }
+}
+
+impl From<Uint256> for Ether {
+    fn from(wei: Uint256) -> Self {
+        Self(Wei::from(wei))
+    }
+}
+
+impl From<Ether> for Uint256 {
+    fn from(eth: Ether) -> Self {
+        Uint256::from(eth.0)
     }
 }
 

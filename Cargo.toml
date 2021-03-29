@@ -14,7 +14,7 @@ ethbloom = "0.9"
 ethereum-types = "0.10"
 hex = { version = "0.4", features = [ "serde" ] }
 jsonrpc_client = { version = "0.5.1", features = ["macros", "reqwest"]}
-num = "0.4"
+num = "0.3"                   # Not 0.4 because of clarity
 rand = "0.8"
 reqwest = { version = "0.11", default-features = false, features = [ "json" ]}
 secp256k1 = "0.20.1"
