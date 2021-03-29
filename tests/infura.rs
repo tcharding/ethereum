@@ -7,7 +7,6 @@ use conquer_once::Lazy;
 
 use ethereum::api::{Client, Url};
 use ethereum::types::{BlockNumber, CallRequest};
-use ethereum::ChainId;
 
 // Set up a project at infura.io (set network to Ropsten).
 static PROJECT_ID: &str = env!("INFURA_PROJECT_ID");
@@ -71,10 +70,9 @@ fn can_connect_to_infura() -> Result<()> {
 fn connected_to_expected_network() -> Result<()> {
     let cli = client();
 
-    let got = cli.chain_id()?;
-    let want = ChainId::from(CHAIN_ID);
+    let chain_id = cli.chain_id()?;
+    assert_eq!(chain_id, CHAIN_ID);
 
-    assert_eq!(got, want);
     Ok(())
 }
 
@@ -139,7 +137,7 @@ fn can_send_transaction() -> Result<()> {
 
     let tx = Transaction {
         nonce: nonce.into(),
-        gas_price: gas_price.into(),
+        gas_price,
         gas_limit: gas_limit.into(),
         to: bob(),
         value,
@@ -150,7 +148,7 @@ fn can_send_transaction() -> Result<()> {
     let tx_signed: Transaction = tx.sign(&alice_private_key(), None);
     assert!(tx_signed.is_valid());
 
-    let hash = cli.send_raw_transaction(tx_signed.to_string())?;
+    let _hash = cli.send_raw_transaction(tx_signed.to_string())?;
 
     Ok(())
 }

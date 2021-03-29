@@ -4,12 +4,10 @@
 use anyhow::{Context, Result};
 use clarity::{Address, Uint256};
 
-pub use crate::jsonrpc_ureq::Url;
-use crate::types::BlockNumber;
-use crate::types::{CallRequest, TransactionReceipt, H256};
-use crate::{ChainId, Ether, Wei};
+pub use crate::jsonrpc::Url;
+use crate::types::{BlockNumber, CallRequest, TransactionReceipt, H256};
 
-use crate::jsonrpc_ureq as rpc;
+use crate::jsonrpc as rpc;
 
 #[derive(Debug, Clone)]
 pub struct Client {
@@ -34,13 +32,12 @@ impl Client {
     }
 
     /// Execute RPC method: `net_version`. Return network id (chain id).
-    pub fn chain_id(&self) -> Result<ChainId> {
+    pub fn chain_id(&self) -> Result<u32> {
         let chain_id = self
             .inner
             .send::<Vec<()>, String>(rpc::Request::v2("net_version", vec![]))
             .context("failed to fetch net version")?;
         let chain_id: u32 = chain_id.parse()?;
-        let chain_id = ChainId::from(chain_id);
 
         Ok(chain_id)
     }
@@ -87,7 +84,7 @@ impl Client {
         Ok(count)
     }
 
-    pub fn get_balance(&self, address: Address, height: BlockNumber) -> Result<Ether> {
+    pub fn get_balance(&self, address: Address, height: BlockNumber) -> Result<Uint256> {
         let amount: String = self
             .inner
             .send(rpc::Request::v2("eth_getBalance", vec![
@@ -95,19 +92,19 @@ impl Client {
                 rpc::serialize(height)?,
             ]))
             .context("failed to get balance")?;
-        let amount = Wei::try_from_hex_str(&amount)?;
+        let amount = Uint256::from_str_radix(&amount, 16)?;
 
-        Ok(amount.into())
+        Ok(amount)
     }
 
-    pub fn gas_price(&self) -> Result<Ether> {
+    pub fn gas_price(&self) -> Result<Uint256> {
         let amount = self
             .inner
             .send::<Vec<()>, String>(rpc::Request::v2("eth_gasPrice", vec![]))
             .context("failed to get gas price")?;
-        let amount = Wei::try_from_hex_str(&amount[2..])?;
+        let amount = Uint256::from_str_radix(&amount[2..], 16)?;
 
-        Ok(amount.into())
+        Ok(amount)
     }
 
     pub fn gas_limit(&self, request: CallRequest, height: BlockNumber) -> Result<Uint256> {
