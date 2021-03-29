@@ -14,7 +14,7 @@
 #![forbid(unsafe_code)]
 
 use std::convert::TryFrom;
-use std::fmt::{self, Display};
+use std::fmt::{self, Display, Formatter};
 use std::num::ParseIntError;
 
 use secp256k1::Secp256k1;
@@ -30,11 +30,11 @@ pub mod jsonrpc_reqwest;
 pub mod jsonrpc_ureq;
 pub mod types;
 
-/// Gets the public address of a private key.
-pub fn secret_key_address(key: &SecretKey) -> Address {
+/// Gets the address of a private key.
+pub fn address_from_secret_key(sk: &SecretKey) -> Address {
     let secp = Secp256k1::signing_only();
-    let public_key = PublicKey::from_secret_key(&secp, key);
-    public_key_address(&public_key)
+    let pk = PublicKey::from_secret_key(&secp, sk);
+    address_from_public_key(&pk)
 }
 
 /// Gets the address of a public key.
@@ -44,11 +44,11 @@ pub fn secret_key_address(key: &SecretKey) -> Address {
 /// crate is 65 bytes long, that is because it is prefixed by `0x04` to
 /// indicate an uncompressed public key; this first byte is ignored when
 /// computing the hash.
-pub fn public_key_address(public_key: &PublicKey) -> Address {
-    let public_key = public_key.serialize_uncompressed();
+pub fn address_from_public_key(pk: &PublicKey) -> Address {
+    let pk = pk.serialize_uncompressed();
 
-    debug_assert_eq!(public_key[0], 0x04);
-    let hash = keccak256(&public_key[1..]);
+    debug_assert_eq!(pk[0], 0x04);
+    let hash = keccak256(&pk[1..]);
 
     Address::from_slice(&hash[12..])
 }
@@ -74,8 +74,8 @@ impl ChainId {
     pub const GETH_DEV: Self = ChainId(1337); // Arbitrary integer.
 }
 
-impl fmt::Display for ChainId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for ChainId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             &Self::MAINNET => write!(f, "MAINNET"),
             &Self::ROPSTEN => write!(f, "ROPSTEN"),
@@ -104,35 +104,5 @@ impl TryFrom<String> for ChainId {
     fn try_from(s: String) -> Result<Self, Self::Error> {
         let chain_id: u32 = s.parse()?;
         Ok(ChainId::from(chain_id))
-    }
-}
-
-/// A serde module for formatting bytes according to Ethereum's convention for
-/// "data".
-///
-/// See https://eth.wiki/json-rpc/API#hex-value-encoding for more details.
-pub mod serde_hex_data {
-    use super::*;
-    use hex::FromHex;
-    use serde::{de::Error, Deserialize, Deserializer, Serializer};
-
-    pub fn serialize<S, V>(value: &V, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-        V: AsRef<[u8]>,
-    {
-        serializer.serialize_str(&format!("0x{}", hex::encode(value.as_ref())))
-    }
-
-    pub fn deserialize<'de, D, V>(deserializer: D) -> Result<V, <D as Deserializer<'de>>::Error>
-    where
-        D: Deserializer<'de>,
-        V: FromHex,
-        <V as FromHex>::Error: Display,
-    {
-        let string = String::deserialize(deserializer)?;
-        let value = V::from_hex(string.trim_start_matches("0x")).map_err(D::Error::custom)?;
-
-        Ok(value)
     }
 }
