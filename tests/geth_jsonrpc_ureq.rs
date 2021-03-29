@@ -3,6 +3,7 @@
 use std::str::FromStr;
 
 use anyhow::Result;
+use clarity::{PrivateKey, Transaction};
 use conquer_once::Lazy;
 
 use ethereum::geth::jsonrpc_ureq::{Client, Url};
@@ -134,7 +135,9 @@ fn transaction() -> Result<()> {
     let send_txn_count_before = cli.get_transaction_count(*SEND_ADDR, latest())?;
     let receive_txn_count_before = cli.get_transaction_count(*RECEIVE_ADDR, latest())?;
 
-    let (hex, amount) = build_transaction()?;
+    let count = cli.get_transaction_count(*SEND_ADDR, latest())?;
+    let (hex, amount) = build_transaction(count + 1)?;
+
     let hash = cli.send_raw_transaction(hex)?;
 
     let receipt = cli.get_transaction_receipt(hash)?;
@@ -161,6 +164,28 @@ fn transaction() -> Result<()> {
 }
 
 // Create a raw signed Ethereum transaction.
-fn build_transaction() -> Result<(String, Wei)> {
-    todo!()
+fn build_transaction(nonce: u32) -> Result<(String, Wei)> {
+    // A helper for filling the keys
+    let mut key_buf: [u8; 32] = rand::random();
+
+    let alices_key = PrivateKey::from_slice(&key_buf).unwrap();
+
+    key_buf = rand::random();
+    let bobs_key = PrivateKey::from_slice(&key_buf).unwrap();
+
+    // Create a new transaction
+    let tx = Transaction {
+        nonce: nonce.into(),
+        gas_price: 1_000_000_000u32.into(),
+        gas_limit: 21_000u32.into(),
+        to: bobs_key.to_public_key().unwrap(),
+        value: 100u32.into(),
+        data: Vec::new(),
+        signature: None, // Not signed. Yet.
+    };
+
+    let tx_signed: Transaction = tx.sign(&alices_key, None);
+    assert!(tx_signed.is_valid());
+
+    Ok((tx_signed.to_string(), Wei::from(100_u32)))
 }
